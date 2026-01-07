@@ -1,0 +1,26 @@
+import torch
+import torch.nn as nn
+
+class HGNNLayer(nn.Module):
+    def __init__(self, in_dim, out_dim):
+        super(HGNNLayer, self).__init__()
+        # Linear transformation weight for node features
+        self.weight = nn.Parameter(torch.Tensor(in_dim, out_dim))
+        # Optional: add bias if needed
+        self.bias = nn.Parameter(torch.Tensor(out_dim))
+        self.reset_parameters()
+    
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.weight)
+        nn.init.zeros_(self.bias)
+    
+    def forward(self, x):
+        # x: node feature matrix of shape (num_nodes, in_dim)
+        out = torch.matmul(x, self.weight) + self.bias
+        return out
+
+# Example usage:
+hgnn_layer = HGNNLayer(in_dim=16, out_dim=32)
+x = torch.randn(10, 16)  # 10 nodes, 16 features each
+output = hgnn_layer(x)
+print(output.shape)  # should be [10, 32]
