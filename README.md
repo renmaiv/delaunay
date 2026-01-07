@@ -1,6 +1,6 @@
-# Conversation Safety Judge 
+# Conversation Safety Judge [project archived]
 
-Test tool for detecting conversation manipulation and safety threats including conversation steering, jailbreaking attempts.
+Tool for detecting conversation manipulation and safety threats including conversation steering, jailbreaking attempts, social engineering, and prompt injection.
 
 ## Installation
 
