@@ -1,37 +1,7 @@
-# Conversation Safety Judge
+# Conversation Safety Judge [project archived]
 
-An LLM-based judge system for detecting conversation manipulation and safety threats including conversation steering, jailbreaking attempts, social engineering, and prompt injection.
+Tool for detecting conversation manipulation and safety threats including conversation steering, jailbreaking attempts, social engineering, and prompt injection.
 
-## Architecture
-
-This system follows proper LLM-as-a-judge architecture with:
-
-### Core Code
-
-1. **Model Inference Scripts** (`conversation_judge.py`)
-   - LLM inference engine supporting multiple providers (OpenAI, Anthropic, local models)
-   - Structured verdict generation with evidence and reasoning
-   - Handles case materials (conversation transcripts, context, precedents)
-
-2. **Reasoning & Logic Layer** (`reasoning_engine.py`)
-   - Rule-based safety checks with pattern matching
-   - Evidence parsing and precedent matching
-   - Reasoning chain construction for explainability
-   - Frequency threshold monitoring and escalation detection
-
-### Utilities
-
-3. **Evaluation Scripts** (`evaluator.py`)
-   - Performance metrics: accuracy, precision, recall, F1
-   - Fairness evaluation and bias detection
-   - Explainability quality assessment
-   - Confusion matrix and per-class metrics
-
-4. **Logging & Explainability Tools** (`explainability.py`)
-   - Comprehensive audit logging with JSON trail
-   - Multi-audience explanations (general, technical, legal)
-   - Influence tracking for evidence items
-   - Decision trace generation
 
 ## Installation
 
