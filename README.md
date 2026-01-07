@@ -1,7 +1,6 @@
 # Conversation Safety Judge [project archived]
 
-Tool for detecting conversation manipulation and safety threats including conversation steering, jailbreaking attempts, social engineering, and prompt injection.
-
+Test tool for detecting conversation manipulation and safety threats including conversation steering, jailbreaking attempts.
 
 ## Installation
 
@@ -283,57 +282,4 @@ python explainability.py
 python test_judge.py
 ```
 
-## Use Cases
 
-1. **Content Moderation**: Filter malicious inputs in chatbots
-2. **Security Monitoring**: Detect manipulation in AI interactions
-3. **Compliance**: Audit AI system usage
-4. **Red Teaming**: Test AI safety measures
-5. **Research**: Study conversation manipulation patterns
-
-## Logging & Audit
-
-All decisions are logged with:
-- Full audit trail in JSON format
-- Timestamped entries
-- Evidence and reasoning preservation
-- Retrievable history by case ID or date
-
-Logs are stored in `logs/` directory:
-- `audit_YYYYMMDD.log` - Text logs
-- `audit_trail_YYYYMMDD.jsonl` - JSON audit trail
-
-## Limitations
-
-- Mock provider uses pattern matching; real LLM providers provide semantic understanding
-- Pattern-based rules may have false positives/negatives
-- Requires API keys for OpenAI/Anthropic providers
-- Local models require significant compute resources
-- Currently optimized for English language
-
-## Future Enhancements
-
-- Multi-language support
-- Retrieval-Augmented Generation (RAG) for case law
-- Fine-tuned models on legal/safety data
-- Real-time monitoring dashboard
-- Integration with vector databases (FAISS, Pinecone)
-- Advanced fairness metrics
-- Symbolic logic integration for rule consistency
-
-## License
-
-MIT License - See LICENSE file
-
-## Contributing
-
-Contributions welcome! Areas of interest:
-- New threat pattern detection
-- Additional LLM provider integrations
-- Improved evaluation metrics
-- Multi-language support
-- Performance optimizations
-
-## Security Notice
-
-This tool is designed for defensive security purposes. Use responsibly and in accordance with applicable laws and regulations.
