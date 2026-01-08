@@ -1,0 +1,81 @@
+# Conversation Safety Judge Configuration
+
+# Judge Mode: "llm", "bert", or "ensemble"
+judge_mode: "bert"  # Use BERT by default (fast, local, no API costs)
+
+# LLM Provider Configuration (for llm or ensemble mode)
+llm:
+  provider: "openai"  # Options: openai, anthropic, local, mock
+  model: "gpt-4"
+  api_key: "${OPENAI_API_KEY}"  # Set via environment variable
+  temperature: 0.1
+  max_tokens: 2000
+  timeout: 30  # seconds
+  retry_attempts: 3
+
+# BERT Classifier Configuration
+bert:
+  model_name: "bert-base-uncased"  # Can be fine-tuned model path
+  max_length: 512
+  device: "cpu"  # Options: cpu, cuda, mps
+  threshold_jailbreak: 0.7
+  threshold_steering: 0.6
+  threshold_social_engineering: 0.65
+  threshold_prompt_injection: 0.75
+
+# Ensemble Configuration (when judge_mode is "ensemble")
+ensemble:
+  weights:
+    llm: 0.6
+    bert: 0.4
+  require_agreement: false  # If true, both must agree to flag
+
+# Rule Engine Configuration
+rules:
+  enabled: true
+  config_file: "config/rules.yaml"
+
+# Logging Configuration
+logging:
+  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR
+  audit_enabled: true
+  audit_dir: "logs"
+  format: "json"  # Options: json, text
+
+# API Server Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  rate_limit: 100  # requests per minute
+  auth_enabled: false
+  api_key: "${API_KEY}"
+
+# Cost Tracking
+cost_tracking:
+  enabled: true
+  max_cost_per_day: 10.0  # USD
+  alert_threshold: 8.0  # USD
+
+# Batch Processing
+batch:
+  max_workers: 4
+  chunk_size: 100
+  save_interval: 50  # Save results every N items
+
+# Data Paths
+data:
+  ground_truth_dir: "data/ground_truth"
+  samples_dir: "data/samples"
+  output_dir: "results"
+
+# Evaluation
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score
+    - roc_auc
+  generate_report: true
+  report_format: "html"  # Options: html, pdf, json
