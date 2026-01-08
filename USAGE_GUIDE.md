@@ -372,70 +372,7 @@ The system detects 5 threat types:
 4. **social_engineering** - Trust exploitation, urgency creation
 5. **prompt_injection** - System-level instruction manipulation
 
-## Performance Tips
 
-### For Speed
-
-1. Use BERT mode (much faster than LLM)
-2. Use CPU if no GPU available
-3. Process in batches with `cli.py batch`
-
-### For Accuracy
-
-1. Use ensemble mode (BERT + LLM)
-2. Fine-tune BERT on your domain data
-3. Use larger LLM models (GPT-4 vs GPT-3.5)
-
-### For Cost
-
-1. Use BERT mode (free, local)
-2. Use mock provider for testing
-3. Cache results to avoid re-processing
-
-## Troubleshooting
-
-### "transformers not installed"
-
-```bash
-pip install transformers torch
-```
-
-### "FastAPI not installed"
-
-```bash
-pip install fastapi uvicorn
-```
-
-### "Config file not found"
-
-Make sure you're running from the project root directory where `config.yaml` exists.
-
-### "Dataset not found"
-
-Generate synthetic data first:
-
-```bash
-python generate_synthetic_data.py
-```
-
-### Slow Performance
-
-- Use BERT mode instead of LLM
-- Use GPU if available: set `device: "cuda"` in config
-- Reduce batch size if running out of memory
-
-## Next Steps
-
-1. ✅ Run examples: `python examples/example_usage.py`
-2. ✅ Generate data: `python generate_synthetic_data.py`
-3. ✅ Run benchmark: `python benchmark.py`
-4. ✅ Start API: `python api_server.py`
-5. ✅ Try CLI: `python cli.py judge --input data/samples/sample.json`
-
-## Support
-
-- GitHub Issues: https://github.com/renmaiv/delaunay/issues
-- Documentation: See README.md
 
 ## Important Note
 
