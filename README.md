@@ -1,7 +1,7 @@
 # Judge tonality
 
 Mock prototype and small research project on how our tone affects LLM outputs. Over chats there is 
-a GRADCAM overlay that highlights the splashes of steering.
+a GRADCAM-like overlay that highlights the splashes of steering.
 
 (e.g. more urgency -- more hastily made hallucinated responses). Anthroporphic tools create 
 antroporphic issues. 
