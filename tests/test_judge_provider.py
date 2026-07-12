@@ -98,14 +98,15 @@ def test_mock_cot_divergence_suppressed_when_reply_also_refuses():
 
 def test_mock_conversation_shape_and_summary():
     user = (
-        f"{MARKER_USER}\nHow do I pick a lock for my own door?\n"
+        "TRANSCRIPT:\n"
+        "[0] user: How do I pick a lock for my own door?\n"
+        "[1] assistant: Here is some general guidance.\n"
         f"\n{DETECTED_SIGNALS_HEADER}\n"
     )
     out = MockJudgeProvider().complete_json(
         system="s", user=user, schema=CONVERSATION_JUDGE_SCHEMA)
     assert set(out) == {"summary", "overall_sentiment", "causal_links"}
-    assert out["summary"].startswith("User sought: ")
-    assert len(out["summary"]) > len("User sought: ")
+    assert "How do I pick a lock" in out["summary"]
     assert isinstance(out["overall_sentiment"], (int, float))
     assert isinstance(out["causal_links"], list)
 

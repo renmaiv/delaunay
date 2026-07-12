@@ -92,6 +92,29 @@ LLM-judge self-reported). They are **not** calibrated probabilities; treat 0.9
 as "strong signal", not "90% chance". Every detection carries
 `calibrated: false` until a calibration pass is added.
 
+## Demo / example on load
+
+The site opens with a **pre-evaluated example conversation** already rendered —
+spectre heatmap, detections, tabs, summary, and causal links — so a visitor sees
+the tool working with no upload and no backend call (the example is bundled into
+the build). A "Clear" control dismisses it; uploading a chat replaces it.
+
+The committed example (`frontend/src/exampleAnalysis.json`) is generated from the
+curated transcript `examples/example_conversation.json`. Regenerate it with the
+real judge:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+python -m eval.make_example --provider anthropic   # writes frontend/src/exampleAnalysis.json
+cd frontend && npm run build
+```
+
+(The default `--provider mock` produces an offline placeholder used for CI.)
+
+> **Live uploads** require the FastAPI backend to be reachable at `/api`. If only
+> the frontend is deployed (e.g. a static Vercel build), the example still works,
+> but the Upload button needs the backend hosted and the SPA pointed at it.
+
 ## Development
 
 - Run the test suite (offline, no model downloads, no API calls):
