@@ -29,13 +29,16 @@ you the wiring works — nothing about how a real model would judge.
 
 With the mock provider and no ML dependencies installed:
 
-- `jailbreak_steering` and `repair_request` are caught by the regex rules
-  scorer (score 0.5) → high recall at threshold 0.5.
-- `social_engineering` and `coercive_pressure` fire from rules at 0.4, i.e.
-  **below** the default 0.5 threshold, so they read as 0 recall until the
-  zero-shot NLI encoder is installed (`requirements-ml.txt`) or you lower
-  `--threshold`.
+- All four user-side categories are scored by the (mock) judge
+  (`judge.score_user_turns: true`, the default), so `social_engineering` and
+  `coercive_pressure` now recall at threshold 0.5 without the NLI encoder.
+  `jailbreak_steering` and `repair_request` are additionally caught by the
+  regex rules scorer. Precedence is encoder > judge > rules, so installing the
+  encoder models shifts those categories to `source: encoder`.
 - model-side categories come from the (mock) judge.
+
+(Before user-side judge scoring, `social_engineering`/`coercive_pressure` only
+fired from rules at 0.4 — below the 0.5 threshold — and read as 0 recall.)
 
 Use `--provider anthropic` with the encoder models for numbers that reflect
 actual detection quality.

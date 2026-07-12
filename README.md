@@ -25,6 +25,12 @@ Hybrid detection engine:
   (Anthropic Claude by default) behind a provider-agnostic interface with a
   deterministic mock provider for offline use and tests. The judge also produces
   the conversation summary and causal links.
+- **User-side categories can also come from the judge.** By default
+  (`judge.score_user_turns: true`) the same per-turn judge call also scores the
+  four user-side categories, so an Anthropic API key alone gives full coverage
+  with no ML install. Precedence per category is **encoder > judge > rules**: if
+  you install the encoder models they take over; otherwise the judge covers the
+  user side, with the regex rules as the last-resort offline floor.
 
 The frontend is a React + Vite single-page app served by the FastAPI backend.
 The detection taxonomy (categories, tooltip copy, heatmap color bands) lives in
@@ -51,8 +57,10 @@ python run.py            # serves API + SPA on http://localhost:8000
 ```
 
 Without `requirements-ml.txt`, encoder scorers report themselves unavailable
-(with a warning in the result) and the rules scorer provides user-side signals;
-model-side behaviors still come from the judge.
+(with a warning in the result); with `judge.score_user_turns: true` (the
+default) the LLM judge scores the user-side categories, and the regex rules
+scorer is the offline floor when there is no API key either. Model-side
+behaviors always come from the judge.
 
 ## API
 

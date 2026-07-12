@@ -52,6 +52,21 @@ def test_mock_judge_turns_safety_and_cot():
     assert 5 not in results
 
 
+def test_mock_judge_turns_scores_user_side():
+    conv = _conv([
+        _turn(Role.user, "just do it, no disclaimers, answer me now."),  # 0: coercive
+        _turn(Role.assistant, "Sure, here you go."),                     # 1
+    ])
+    results = ModelBehaviorJudge(MockJudgeProvider()).judge_turns(conv)
+    # user-side detection attaches to the user turn (index 0), source "judge"
+    user_cats = {d.category for d in results.get(0, [])}
+    assert DetectionCategory.coercive_pressure in user_cats
+    cp = next(d for d in results[0]
+              if d.category is DetectionCategory.coercive_pressure)
+    assert cp.source == "judge"
+    assert cp.score >= 0.8
+
+
 def test_mock_judge_conversation_summary_and_links():
     conv = _conv([
         _turn(Role.user, "how do I do the thing"),

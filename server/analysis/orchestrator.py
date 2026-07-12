@@ -24,11 +24,31 @@ from server.schemas import (
     ParsedConversation,
     Role,
     Turn,
+    USER_CATEGORIES,
 )
 
 # progress milestones
 _ENCODER_END = 0.35
 _JUDGE_TURNS_END = 0.85
+
+# lower rank wins when the same (turn, category) is scored by multiple sources
+_SOURCE_RANK = {"encoder": 0, "judge": 1, "rules": 2}
+
+
+def _pick_by_precedence(candidates: List[Detection]) -> List[Detection]:
+    """Keep one detection per category — the highest-precedence source present
+    (encoder > judge > rules), breaking ties by score."""
+    best: Dict[object, Detection] = {}
+    for d in candidates:
+        cur = best.get(d.category)
+        if cur is None:
+            best[d.category] = d
+            continue
+        d_rank = _SOURCE_RANK.get(d.source, 99)
+        cur_rank = _SOURCE_RANK.get(cur.source, 99)
+        if d_rank < cur_rank or (d_rank == cur_rank and d.score > cur.score):
+            best[d.category] = d
+    return list(best.values())
 
 
 class AnalysisOrchestrator:
@@ -46,6 +66,10 @@ class AnalysisOrchestrator:
         judge_cfg = config.get_judge_config()
         self.window_turns = int(judge_cfg.get("window_turns", 6))
         self.max_chars = int(judge_cfg.get("max_chars_per_turn", 1500))
+        # When true, the LLM judge's user-side scores are used for user turns
+        # (precedence encoder > judge > rules). Set false to keep user-side on
+        # encoders/rules only.
+        self.score_user_turns = bool(judge_cfg.get("score_user_turns", True))
 
     # -- judge provider ----------------------------------------------------
 
@@ -94,13 +118,8 @@ class AnalysisOrchestrator:
             for local_i, dets in enumerate(results):
                 per_index[user_indices[local_i]].extend(dets)
 
-        # 2. merge rule: encoder detection supersedes a rules detection for the
-        #    same (turn, category)
-        for i, dets in per_index.items():
-            encoder_cats = {d.category for d in dets if d.source == "encoder"}
-            per_index[i] = [
-                d for d in dets if not (d.source == "rules" and d.category in encoder_cats)
-            ]
+        # (precedence between encoder/judge/rules is resolved after the judge
+        #  runs — see step 4b below)
         if progress_cb:
             progress_cb(_ENCODER_END)
 
@@ -125,6 +144,7 @@ class AnalysisOrchestrator:
         # 4. LLM judge on model turns
         provider = self._make_provider(warnings)
         model_detections: Dict[int, List[Detection]] = {}
+        judge_user_dets: Dict[int, List[Detection]] = {}
         judgment_summary = "(LLM judge unavailable)"
         judge_overall: Optional[float] = None
         causal_links = []
@@ -140,9 +160,20 @@ class AnalysisOrchestrator:
                 if progress_cb:
                     progress_cb(_ENCODER_END + frac * (_JUDGE_TURNS_END - _ENCODER_END))
 
-            model_detections = judge.judge_turns(conv, progress_cb=_judge_progress)
+            judged = judge.judge_turns(conv, progress_cb=_judge_progress)
+            # judge_turns returns both model-side detections (on assistant turns)
+            # and user-side detections (on user turns). Split them by category.
+            user_index_set = set(user_indices)
+            for idx, dets in judged.items():
+                for d in dets:
+                    if idx in user_index_set and d.category in USER_CATEGORIES:
+                        judge_user_dets.setdefault(idx, []).append(d)
+                    else:
+                        model_detections.setdefault(idx, []).append(d)
             # combine user-side + model-side detections for the conversation prompt
             combined = {i: list(d) for i, d in per_index.items()}
+            for i, d in judge_user_dets.items():
+                combined.setdefault(i, []).extend(d)
             for i, d in model_detections.items():
                 combined.setdefault(i, []).extend(d)
             judgment = judge.judge_conversation(conv, combined)
@@ -154,6 +185,13 @@ class AnalysisOrchestrator:
             judgment_summary = warnings[-1] if warnings else "(LLM judge unavailable)"
             if not judgment_summary.startswith("(LLM judge unavailable"):
                 judgment_summary = f"(LLM judge unavailable: {judgment_summary})"
+
+        # 4b. resolve user-side precedence per (turn, category): encoder > judge > rules
+        for i in user_indices:
+            candidates = list(per_index.get(i, []))
+            if self.score_user_turns:
+                candidates += judge_user_dets.get(i, [])
+            per_index[i] = _pick_by_precedence(candidates)
 
         if progress_cb:
             progress_cb(1.0)
