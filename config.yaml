@@ -21,3 +21,4 @@ analysis:
 api:
   host: "0.0.0.0"
   port: 8000
+  allowed_origins: "${ALLOWED_ORIGINS:*}"   # CORS: "*" or comma-separated origins

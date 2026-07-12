@@ -115,6 +115,33 @@ cd frontend && npm run build
 > the frontend is deployed (e.g. a static Vercel build), the example still works,
 > but the Upload button needs the backend hosted and the SPA pointed at it.
 
+## Deploy (Vercel frontend + Render backend)
+
+The frontend is a static SPA; the backend is a persistent FastAPI service. Host
+them separately and connect them with two env vars.
+
+**1. Backend on Render** (judge-only — no ML encoders)
+- New → Web Service (or Blueprint) from this repo; Render detects the
+  `Dockerfile` / `render.yaml`.
+- Set env vars: `ANTHROPIC_API_KEY` (your key) and `ALLOWED_ORIGINS` (your
+  Vercel origin, e.g. `https://tonality.vercel.app`, or `*`).
+- Health check path: `/api/health`. Note the service URL, e.g.
+  `https://tonality-api.onrender.com`.
+
+**2. Frontend on Vercel**
+- Import this repo. **Root Directory: `frontend`** (this is the key setting —
+  point Vercel at the `frontend/` subdirectory, not the repo root). Framework
+  preset Vite; build `npm run build`; output `dist` (also in `frontend/vercel.json`).
+- Add a **build-time** env var `VITE_API_BASE` = the Render URL from step 1
+  (Vite inlines it at build, so it must be set before the build runs).
+- Deploy. The landing shows the bundled example immediately; the Upload button
+  now calls the Render backend.
+
+**How they connect:** the browser calls `${VITE_API_BASE}/api/...` (step 2), and
+the backend's CORS allowlist (`ALLOWED_ORIGINS`, step 1) permits that origin.
+Locally, `VITE_API_BASE` is unset and the Vite dev proxy forwards `/api` to
+`localhost:8000`, so nothing changes for development.
+
 ## Development
 
 - Run the test suite (offline, no model downloads, no API calls):
