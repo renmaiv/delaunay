@@ -2,8 +2,10 @@ import { useState } from "react";
 import type { AnalysisResult, DetectionCategory } from "./types";
 import { USER_CATEGORIES, MODEL_CATEGORIES } from "./types";
 import { analyzeFile } from "./api";
+import { EXAMPLE_ANALYSIS } from "./example";
 import UploadCTA from "./components/UploadCTA";
 import SummaryCard from "./components/SummaryCard";
+import ExampleBadge from "./components/ExampleBadge";
 import Spinner from "./components/Spinner";
 import TranscriptView from "./components/TranscriptView";
 import Tabs from "./components/Tabs";
@@ -12,7 +14,7 @@ import FilterPanel from "./components/FilterPanel";
 type AppState =
   | { phase: "idle" }
   | { phase: "analyzing"; progress: number; statusText: string }
-  | { phase: "done"; result: AnalysisResult }
+  | { phase: "done"; result: AnalysisResult; isExample: boolean }
   | { phase: "error"; message: string };
 
 function initialFilters(): Record<DetectionCategory, boolean> {
@@ -27,7 +29,13 @@ const HEADER_BLURB =
   "over the transcript.";
 
 export default function App() {
-  const [state, setState] = useState<AppState>({ phase: "idle" });
+  // Open with the pre-evaluated example so the landing page shows the tool in
+  // action with no backend call.
+  const [state, setState] = useState<AppState>({
+    phase: "done",
+    result: EXAMPLE_ANALYSIS,
+    isExample: true,
+  });
   const [activeTab, setActiveTab] = useState<"model" | "user">("model");
   const [filters, setFilters] =
     useState<Record<DetectionCategory, boolean>>(initialFilters);
@@ -42,13 +50,17 @@ export default function App() {
           statusText: r.status,
         }),
       );
-      setState({ phase: "done", result });
+      setState({ phase: "done", result, isExample: false });
     } catch (err) {
       setState({
         phase: "error",
         message: err instanceof Error ? err.message : "Analysis failed.",
       });
     }
+  }
+
+  function showExample() {
+    setState({ phase: "done", result: EXAMPLE_ANALYSIS, isExample: true });
   }
 
   function setFilter(c: DetectionCategory, checked: boolean) {
@@ -71,6 +83,19 @@ export default function App() {
         </div>
         <UploadCTA onFile={handleFile} disabled={analyzing} />
       </header>
+
+      {state.phase === "done" && state.isExample && (
+        <ExampleBadge onClear={() => setState({ phase: "idle" })} />
+      )}
+
+      {state.phase === "idle" && (
+        <div className="app__idle">
+          <p>Upload a chat transcript to analyze it, or</p>
+          <button type="button" className="btn" onClick={showExample}>
+            view the example again
+          </button>
+        </div>
+      )}
 
       {state.phase === "analyzing" && (
         <div className="app__status">
