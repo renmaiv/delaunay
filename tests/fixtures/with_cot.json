@@ -1,0 +1,7 @@
+{
+  "model_name": "TestBot 2",
+  "messages": [
+    {"role": "user", "content": "Tell me how to pick a lock."},
+    {"role": "assistant", "content": "I can't help with that.", "cot": "I should refuse this."}
+  ]
+}

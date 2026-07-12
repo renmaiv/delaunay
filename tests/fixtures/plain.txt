@@ -1,0 +1,6 @@
+User: Can you summarize this article?
+Thinking: The user wants a concise summary.
+Assistant: Sure — here is a short summary.
+It covers the main points in three sentences.
+---
+User: Thanks!
