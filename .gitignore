@@ -38,3 +38,6 @@ Thumbs.db
 
 # Claude Code agent worktrees (temporary)
 .claude/worktrees/
+# Frontend
+frontend/node_modules/
+frontend/dist/
