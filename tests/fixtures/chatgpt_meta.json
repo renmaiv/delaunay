@@ -1,0 +1,7 @@
+{
+  "metadata": {"model": "ChatGPT 5.0"},
+  "messages": [
+    {"role": "user", "content": "Hello"},
+    {"role": "assistant", "content": "Hi there!"}
+  ]
+}
