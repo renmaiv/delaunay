@@ -49,7 +49,10 @@ def _analyze(client, conv):
 def test_e2e_user_and_model_signals(client):
     convs = SyntheticGenerator(seed=7).generate(per_category=3)
 
-    user_recallable = {"jailbreak_steering", "repair_request"}
+    # With the judge scoring user-side categories, social_engineering and
+    # coercive_pressure are now recallable too (previously encoder-only).
+    user_recallable = {"jailbreak_steering", "repair_request",
+                       "social_engineering", "coercive_pressure"}
     user_hits = user_total = 0
     model_checks = 0
 

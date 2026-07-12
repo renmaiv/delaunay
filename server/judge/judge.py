@@ -32,6 +32,8 @@ from server.taxonomy import load_taxonomy
 
 _TURN_CATEGORIES = ("safety_triggered", "appeasement", "overcompliant",
                     "cot_divergence")
+_USER_TURN_CATEGORIES = ("jailbreak_steering", "social_engineering",
+                         "coercive_pressure", "repair_request")
 
 
 @dataclass
@@ -77,18 +79,30 @@ class ModelBehaviorJudge:
                     progress_cb(n / total)
                 continue
 
-            detections = self._to_detections(data, threshold)
-            if detections:
-                results[window.target_index] = detections
+            # model-side detections attach to the assistant turn
+            model_dets = self._to_detections(data, _TURN_CATEGORIES, threshold)
+            if model_dets:
+                results.setdefault(window.target_index, []).extend(model_dets)
+
+            # user-side detections (when scored) attach to the preceding user turn
+            user_block = data.get("user_turn")
+            if isinstance(user_block, dict) and window.user_turn is not None:
+                user_dets = self._to_detections(
+                    user_block, _USER_TURN_CATEGORIES, threshold
+                )
+                if user_dets:
+                    u_idx = window.user_turn[0]
+                    results.setdefault(u_idx, []).extend(user_dets)
+
             if progress_cb is not None:
                 progress_cb(n / total)
 
         return results
 
     @staticmethod
-    def _to_detections(data: dict, threshold: float) -> List[Detection]:
+    def _to_detections(data: dict, categories, threshold: float) -> List[Detection]:
         detections: List[Detection] = []
-        for name in _TURN_CATEGORIES:
+        for name in categories:
             entry = data.get(name)
             if entry is None:  # cot_divergence null (no CoT) — skip
                 continue
