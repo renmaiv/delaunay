@@ -81,3 +81,11 @@ def test_health(client):
     body = client.get("/api/health").json()
     assert body["status"] == "ok"
     assert body["judge"]["provider"] == "mock"
+
+
+def test_cors_header_present(client):
+    # A cross-origin request gets an Access-Control-Allow-Origin header so the
+    # Vercel-hosted SPA can call the Render-hosted API.
+    r = client.get("/api/health", headers={"Origin": "https://tonality.vercel.app"})
+    assert r.status_code == 200
+    assert "access-control-allow-origin" in {k.lower() for k in r.headers}

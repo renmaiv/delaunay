@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -27,6 +28,27 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Semantic Observability", lifespan=lifespan)
+
+
+def _allowed_origins() -> list[str]:
+    """CORS origins from api.allowed_origins (env ALLOWED_ORIGINS). "*" allows
+    all; otherwise a comma-separated allowlist. Read at import so the middleware
+    can be registered before requests are served."""
+    config = load_config(os.environ.get("APP_CONFIG_PATH", "config.yaml"))
+    raw = (config.get("api.allowed_origins", "*") or "*").strip()
+    if raw == "*" or not raw:
+        return ["*"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
+
+
+# No cookies are used, so credentials stay off (which also lets "*" work).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_orchestrator(request: Request) -> AnalysisOrchestrator:

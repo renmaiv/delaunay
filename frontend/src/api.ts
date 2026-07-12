@@ -1,5 +1,11 @@
 import type { AnalysisResponse, AnalysisResult } from "./types";
 
+// Backend base URL. Empty in local dev (the Vite proxy forwards /api to
+// localhost:8000); set VITE_API_BASE at build time (e.g. the Render URL) for a
+// split frontend/backend deploy. Trailing slash trimmed so `${API_BASE}/api/x`
+// is always well-formed.
+const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+
 const POLL_INTERVAL_MS = 1500;
 const OVERALL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -36,7 +42,7 @@ export async function analyzeFile(
   const form = new FormData();
   form.append("file", file);
 
-  const res = await fetch("/api/analyze", { method: "POST", body: form });
+  const res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: form });
   if (!res.ok) {
     throw new Error(await errorFromResponse(res));
   }
@@ -57,7 +63,7 @@ export async function analyzeFile(
   while (Date.now() < deadline) {
     await delay(POLL_INTERVAL_MS);
 
-    const pollRes = await fetch(`/api/analysis/${encodeURIComponent(id)}`);
+    const pollRes = await fetch(`${API_BASE}/api/analysis/${encodeURIComponent(id)}`);
     if (!pollRes.ok) {
       throw new Error(await errorFromResponse(pollRes));
     }
@@ -80,7 +86,7 @@ export async function analyzeFile(
 
 /** GET /api/taxonomy — returns the raw shared/taxonomy.json contents. */
 export async function fetchTaxonomy(): Promise<unknown> {
-  const res = await fetch("/api/taxonomy");
+  const res = await fetch(`${API_BASE}/api/taxonomy`);
   if (!res.ok) {
     throw new Error(await errorFromResponse(res));
   }

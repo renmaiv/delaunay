@@ -1,0 +1,16 @@
+frontend
+eval
+tests
+docs
+data
+examples
+.git
+.github
+.venv
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+requirements-ml.txt
+scripts
