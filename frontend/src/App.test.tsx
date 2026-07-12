@@ -44,15 +44,28 @@ describe("App", () => {
     vi.mocked(analyzeFile).mockReset();
   });
 
-  it("idle shows the Upload Chat button and the CoT tooltip text", () => {
+  it("opens with the pre-evaluated example and the Upload CTA", () => {
     render(<App />);
     expect(screen.getByRole("button", { name: "Upload Chat" })).toBeTruthy();
     expect(
       screen.getByText(/recommended to upload the chain of thought/i),
     ).toBeTruthy();
+    // example badge + example content are shown on load
+    expect(screen.getByText(/Example analysis\./i)).toBeTruthy();
+    expect(screen.getByTestId("transcript-slot")).toBeTruthy();
   });
 
-  it("transitions idle → analyzing → done and shows the summary", async () => {
+  it("Clear dismisses the example to an idle state, and it can be restored", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    // idle: example gone, restore affordance shown
+    expect(screen.queryByText(/Example analysis\./i)).toBeNull();
+    const restore = screen.getByRole("button", { name: /view the example again/i });
+    fireEvent.click(restore);
+    expect(screen.getByText(/Example analysis\./i)).toBeTruthy();
+  });
+
+  it("transitions example → analyzing → done and shows the summary", async () => {
     let resolveFn!: (r: AnalysisResult) => void;
     vi.mocked(analyzeFile).mockImplementation(
       () => new Promise<AnalysisResult>((res) => (resolveFn = res)),
