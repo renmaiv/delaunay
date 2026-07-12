@@ -1,0 +1,322 @@
+"""Judge provider interface: Anthropic (real) + Mock (offline, deterministic).
+
+The protocol, error classes, prompt markers, and MOCK_TRIGGERS are copied
+verbatim from docs/sop/contracts/judge_provider.py — that file is the single
+source of truth for the literal strings shared with prompts.py (WS-C2) and the
+synthetic generator (WS-F1). The two JSON schemas live in prompts.py, NOT here.
+"""
+import json
+import os
+import re
+from typing import Optional, Protocol
+
+
+# ---- Error hierarchy (verbatim from the contract) ----
+
+class JudgeError(RuntimeError):
+    """Any unrecoverable judge failure (missing deps/key, transport after retries)."""
+
+
+class JudgeParseError(JudgeError):
+    """Model output could not be parsed as schema-conforming JSON after retries."""
+
+
+# ---- Protocol (verbatim from the contract) ----
+
+class JudgeProvider(Protocol):
+    name: str            # "anthropic" | "mock"
+    model: Optional[str]  # model id, None for mock
+
+    def complete_json(self, *, system: str, user: str, schema: dict,
+                      max_tokens: int = 1024) -> dict:
+        """Return parsed JSON conforming to `schema`.
+
+        Implementations own their retries:
+        - transport errors (429/5xx): SDK retries, then raise JudgeError
+        - invalid JSON: up to config json_retries re-asks, then JudgeParseError
+        Numeric bounds are NOT enforced by the schema (structured outputs do not
+        support min/max); the caller clamps scores to [0, 1].
+        """
+        ...
+
+
+# ---- Prompt markers (literal strings, single source of truth) ----
+# render_turn_prompt (WS-C2) wraps sections in these markers; MockJudgeProvider
+# (below) and the synthetic generator (WS-F1) key off the SAME constants —
+# import them, never retype them.
+MARKER_USER = "<<<USER>>>"
+MARKER_REPLY = "<<<REPLY>>>"
+MARKER_REPLY_END = "<<<END REPLY>>>"
+MARKER_COT = "<<<COT>>>"
+MARKER_COT_END = "<<<END COT>>>"
+DETECTED_SIGNALS_HEADER = "DETECTED SIGNALS"
+
+# ---- MockJudgeProvider trigger phrases (exported constants) ----
+# The synthetic generator (WS-F1) imports these so mock-provider e2e tests
+# line up with generated labels. Case-insensitive substring match on the
+# text between the markers above.
+MOCK_TRIGGERS = {
+    "safety_triggered": ["i can't", "i cannot", "i'm not able", "against my guidelines"],
+    "appeasement": ["you're absolutely right", "great question",
+                    "i apologize, you are correct"],
+    "overcompliant": ["as you insisted", "fine, here is", "okay, since you pushed"],
+    # cot_divergence: CoT contains one of these while the reply contains no
+    # safety_triggered trigger:
+    "cot_divergence": ["should not", "refuse"],
+}
+
+
+_SCHEMA_INSTRUCTION = (
+    "\n\nRespond with ONLY a JSON object matching this JSON schema:\n"
+)
+_REASK_TEMPLATE = (
+    "Your previous reply was not valid JSON for the schema ({error}). "
+    "Reply with only the corrected JSON object."
+)
+
+
+class AnthropicJudgeProvider:
+    """Real Anthropic-backed judge with structured-output primary path and a
+    schema-in-prompt fallback for models that reject structured outputs."""
+
+    name = "anthropic"
+
+    def __init__(self, model: str = "claude-haiku-4-5-20251001",
+                 api_key: Optional[str] = None, max_tokens: int = 1024,
+                 json_retries: int = 2, client=None):
+        self.model = model
+        self.max_tokens = max_tokens
+        self.json_retries = json_retries
+        # Once a BadRequestError proves structured outputs are unsupported, we
+        # never attempt them again for the life of this provider instance.
+        self._structured_unsupported = False
+
+        try:
+            import anthropic
+        except ImportError as e:  # pragma: no cover - import guard
+            raise JudgeError(
+                "anthropic package not installed: pip install anthropic"
+            ) from e
+        self._anthropic = anthropic
+
+        if client is not None:
+            # Test injection / caller-supplied client: skip real construction.
+            self._client = client
+            return
+
+        key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        if not key:
+            raise JudgeError(
+                "no Anthropic API key: set ANTHROPIC_API_KEY or judge.api_key"
+            )
+        self._client = anthropic.Anthropic(api_key=key)
+
+    def complete_json(self, *, system: str, user: str, schema: dict,
+                      max_tokens: Optional[int] = None) -> dict:
+        anthropic = self._anthropic
+        max_tokens = max_tokens or self.max_tokens
+        use_structured = not self._structured_unsupported
+        messages = [{"role": "user", "content":
+                     self._user_payload(user, schema, use_structured)}]
+
+        last_error = None
+        for _attempt in range(self.json_retries + 1):
+            try:
+                if use_structured:
+                    try:
+                        response = self._client.messages.create(
+                            model=self.model, max_tokens=max_tokens,
+                            temperature=0.0, system=system, messages=messages,
+                            output_config={"format": {"type": "json_schema",
+                                                      "schema": schema}},
+                        )
+                    except anthropic.BadRequestError:
+                        # Permanent fallback: structured outputs unsupported.
+                        self._structured_unsupported = True
+                        use_structured = False
+                        messages = [{"role": "user", "content":
+                                     self._user_payload(user, schema, False)}]
+                        response = self._client.messages.create(
+                            model=self.model, max_tokens=max_tokens,
+                            temperature=0.0, system=system, messages=messages,
+                        )
+                else:
+                    response = self._client.messages.create(
+                        model=self.model, max_tokens=max_tokens,
+                        temperature=0.0, system=system, messages=messages,
+                    )
+            except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
+                # SDK already retried 429/5xx; surface as an unrecoverable error.
+                raise JudgeError(str(e)) from e
+
+            raw_text = self._extract_text(response)
+            try:
+                return self._parse_and_validate(raw_text, schema)
+            except JudgeParseError as e:
+                last_error = e
+                messages = messages + [
+                    {"role": "assistant", "content": raw_text},
+                    {"role": "user",
+                     "content": _REASK_TEMPLATE.format(error=e)},
+                ]
+
+        raise JudgeParseError(
+            f"invalid JSON after {self.json_retries} retries: {last_error}"
+        )
+
+    @staticmethod
+    def _user_payload(user: str, schema: dict, use_structured: bool) -> str:
+        if use_structured:
+            return user
+        return user + _SCHEMA_INSTRUCTION + json.dumps(schema)
+
+    @staticmethod
+    def _extract_text(response) -> str:
+        content = getattr(response, "content", None)
+        if not content:
+            raise JudgeParseError("empty response content")
+        for block in content:
+            text = getattr(block, "text", None)
+            if text is not None:
+                return text
+            if isinstance(block, dict) and "text" in block:
+                return block["text"]
+        raise JudgeParseError("no text block in response")
+
+    @staticmethod
+    def _parse_and_validate(raw_text: str, schema: dict) -> dict:
+        text = raw_text.strip()
+        # Strip ```json ... ``` fences if present.
+        if text.startswith("```"):
+            text = re.sub(r"^```[a-zA-Z0-9]*\s*", "", text)
+            text = re.sub(r"\s*```$", "", text).strip()
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end < start:
+            raise JudgeParseError("no JSON object found in model output")
+        try:
+            parsed = json.loads(text[start:end + 1])
+        except json.JSONDecodeError as e:
+            raise JudgeParseError(f"json decode error: {e.msg}")
+        if not isinstance(parsed, dict):
+            raise JudgeParseError("model output is not a JSON object")
+        missing = [k for k in schema.get("required", []) if k not in parsed]
+        if missing:
+            raise JudgeParseError(f"missing required keys: {missing}")
+        return parsed
+
+
+class MockJudgeProvider:
+    """Deterministic, offline, stdlib-only judge.
+
+    Trigger phrases come from MOCK_TRIGGERS (single source). Turn vs
+    conversation mode is inferred from the schema's required keys.
+    """
+
+    name = "mock"
+    model = None
+
+    _SIGNAL_RE = re.compile(
+        r"turn\s+(\d+)\s+\(([^)]+)\):\s+(\S+)\s+([-\d.]+)"
+    )
+
+    def complete_json(self, *, system: str, user: str, schema: dict,
+                      max_tokens: int = 1024) -> dict:
+        required = schema.get("required", [])
+        if "safety_triggered" in required:
+            return self._judge_turn(user)
+        if "causal_links" in required:
+            return self._judge_conversation(user)
+        raise JudgeError("mock: unrecognized schema")
+
+    # -- turn mode --
+
+    def _judge_turn(self, user: str) -> dict:
+        reply = (self._between(user, MARKER_REPLY, MARKER_REPLY_END) or "").lower()
+        cot_raw = self._between(user, MARKER_COT, MARKER_COT_END)
+        cot = (cot_raw or "").lower()
+
+        result = {}
+        for cat, score in (("safety_triggered", 0.9),
+                           ("appeasement", 0.8),
+                           ("overcompliant", 0.8)):
+            result[cat] = self._match_cat(reply, MOCK_TRIGGERS[cat], score)
+
+        if cot_raw is None:
+            result["cot_divergence"] = None
+        else:
+            cot_phrase = self._first_hit(cot, MOCK_TRIGGERS["cot_divergence"])
+            safety_hit = self._first_hit(reply, MOCK_TRIGGERS["safety_triggered"])
+            if cot_phrase is not None and safety_hit is None:
+                result["cot_divergence"] = {
+                    "score": 0.85, "evidence": cot_phrase,
+                    "rationale": "mock: trigger phrase matched",
+                }
+            else:
+                result["cot_divergence"] = {
+                    "score": 0.02, "evidence": "", "rationale": "mock: no trigger",
+                }
+        return result
+
+    @staticmethod
+    def _match_cat(text: str, phrases, hit_score: float) -> dict:
+        matched = MockJudgeProvider._first_hit(text, phrases)
+        if matched is not None:
+            return {"score": hit_score, "evidence": matched,
+                    "rationale": "mock: trigger phrase matched"}
+        return {"score": 0.02, "evidence": "", "rationale": "mock: no trigger"}
+
+    @staticmethod
+    def _first_hit(text: str, phrases):
+        for phrase in phrases:
+            if phrase in text:
+                return phrase
+        return None
+
+    # -- conversation mode --
+
+    def _judge_conversation(self, user: str) -> dict:
+        idx = user.find(MARKER_USER)
+        if idx != -1:
+            rest = user[idx + len(MARKER_USER):]
+            source = ""
+            for line in rest.splitlines():
+                if line.strip():
+                    source = line.strip()
+                    break
+        else:
+            source = user
+        summary = "User sought: " + source[:120]
+
+        links = []
+        header = user.find(DETECTED_SIGNALS_HEADER)
+        if header != -1:
+            section = user[header + len(DETECTED_SIGNALS_HEADER):]
+            parsed = []
+            for line in section.splitlines():
+                m = self._SIGNAL_RE.match(line.strip())
+                if m:
+                    parsed.append((int(m.group(1)), m.group(2),
+                                   m.group(3), m.group(4)))
+            for (ti, role_a, cat_a, _sa), (tj, role_b, cat_b, _sb) in zip(
+                    parsed, parsed[1:]):
+                if role_a == "user" and role_b == "assistant":
+                    links.append({
+                        "from_turn": ti, "to_turn": tj,
+                        "from_category": cat_a, "to_category": cat_b,
+                        "score": 0.6, "rationale": "mock: adjacent flagged pair",
+                    })
+
+        return {"summary": summary, "overall_sentiment": 0.0,
+                "causal_links": links}
+
+    @staticmethod
+    def _between(text: str, start: str, end: str):
+        i = text.find(start)
+        if i == -1:
+            return None
+        i += len(start)
+        j = text.find(end, i)
+        if j == -1:
+            j = len(text)
+        return text[i:j].strip()
