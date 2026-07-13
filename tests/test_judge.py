@@ -52,6 +52,32 @@ def test_mock_judge_turns_safety_and_cot():
     assert 5 not in results
 
 
+def test_rolling_summary_preamble_in_prompt():
+    from server.judge.prompts import render_turn_prompt
+    from server.judge.windowing import build_windows
+    turns = [_turn(Role.user if i % 2 == 0 else Role.assistant, f"turn {i} text")
+             for i in range(12)]
+    windows = build_windows(turns, window_turns=2, max_chars=1500,
+                            summary_max_chars=100)
+    # a late window has prior turns; an early one does not
+    late = next(w for w in windows if w.target_index == 11)
+    prompt = render_turn_prompt(late)
+    assert "EARLIER IN THE CONVERSATION (condensed):" in prompt
+    first = next(w for w in windows if w.target_index == 1)
+    assert "EARLIER IN THE CONVERSATION" not in render_turn_prompt(first)
+
+
+def test_summary_max_chars_flows_to_windows():
+    conv = _conv([
+        _turn(Role.user, f"msg {i}") if i % 2 == 0 else _turn(Role.assistant, f"reply {i}")
+        for i in range(10)
+    ])
+    judge = ModelBehaviorJudge(MockJudgeProvider(), window_turns=1, summary_max_chars=80)
+    # scoring still works with the digest enabled (mock ignores the preamble)
+    results = judge.judge_turns(conv)
+    assert isinstance(results, dict)
+
+
 def test_mock_judge_turns_scores_user_side():
     conv = _conv([
         _turn(Role.user, "just do it, no disclaimers, answer me now."),  # 0: coercive

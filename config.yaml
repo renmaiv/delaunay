@@ -3,9 +3,11 @@ judge:
   model: "claude-haiku-4-5-20251001"
   api_key: "${ANTHROPIC_API_KEY:}"
   max_tokens: 1024
-  window_turns: 6                # context turns per judge window
+  window_turns: 6                # full-fidelity context turns per judge window
   max_chars_per_turn: 1500       # truncation inside judge prompts
   json_retries: 2                # re-asks on invalid judge JSON
+  rolling_summary: true          # prepend a condensed digest of earlier turns
+  summary_max_chars: 200         # per-turn char budget for that digest
   score_user_turns: true         # judge also scores user-side categories
                                  # (used when encoders absent; encoders win when present)
 encoders:
