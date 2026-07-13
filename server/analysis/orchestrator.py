@@ -66,6 +66,11 @@ class AnalysisOrchestrator:
         judge_cfg = config.get_judge_config()
         self.window_turns = int(judge_cfg.get("window_turns", 6))
         self.max_chars = int(judge_cfg.get("max_chars_per_turn", 1500))
+        # Condensed earlier-turns digest for global grounding (0 disables).
+        self.summary_max_chars = (
+            int(judge_cfg.get("summary_max_chars", 200))
+            if judge_cfg.get("rolling_summary", True) else 0
+        )
         # When true, the LLM judge's user-side scores are used for user turns
         # (precedence encoder > judge > rules). Set false to keep user-side on
         # encoders/rules only.
@@ -154,7 +159,8 @@ class AnalysisOrchestrator:
         if provider is not None:
             provider_name = provider.name
             judge_model = getattr(provider, "model", None)
-            judge = ModelBehaviorJudge(provider, self.window_turns, self.max_chars)
+            judge = ModelBehaviorJudge(provider, self.window_turns, self.max_chars,
+                                       self.summary_max_chars)
 
             def _judge_progress(frac: float):
                 if progress_cb:

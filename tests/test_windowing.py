@@ -87,3 +87,34 @@ def test_truncation_applied_to_context_and_input_unmutated():
     assert len(ctx[0].content) <= 30 + len(" …[truncated]… ")
     # Input turn is never mutated.
     assert turns[0].content == "y" * 400
+
+
+def test_prior_disabled_by_default():
+    windows = build_windows(_convo(), window_turns=2, max_chars=1500)
+    assert all(w.prior == [] for w in windows)
+
+
+def test_prior_holds_turns_before_the_window():
+    # window_turns=2 so for target 11 the context is [8, 9]; everything before
+    # the context start (indices 0..7) becomes the condensed prior.
+    windows = build_windows(_convo(), window_turns=2, max_chars=1500,
+                            summary_max_chars=50)
+    w11 = next(w for w in windows if w.target_index == 11)
+    ctx_indices = [i for i, _ in w11.context]
+    prior_indices = [i for i, _ in w11.prior]
+    assert ctx_indices == [8, 9]
+    assert prior_indices == list(range(0, 8))
+    # prior and context are disjoint; prior is condensed to the summary budget.
+    assert set(prior_indices).isdisjoint(ctx_indices)
+
+
+def test_prior_is_condensed_and_input_unmutated():
+    turns = _convo()
+    turns[0] = ParsedTurn(role=Role.assistant, content="z" * 400)
+    windows = build_windows(turns, window_turns=2, max_chars=1500,
+                            summary_max_chars=40)
+    w11 = next(w for w in windows if w.target_index == 11)
+    prior = dict(w11.prior)
+    assert "…[truncated]…" in prior[0].content
+    assert len(prior[0].content) <= 40 + len(" …[truncated]… ")
+    assert turns[0].content == "z" * 400
