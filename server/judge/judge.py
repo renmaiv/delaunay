@@ -49,10 +49,12 @@ def _clamp(value: float, lo: float, hi: float) -> float:
 
 class ModelBehaviorJudge:
     def __init__(self, provider: JudgeProvider, window_turns: int = 6,
-                 max_chars: int = 1500):
+                 max_chars: int = 1500, summary_max_chars: int = 0):
         self.provider = provider
         self.window_turns = window_turns
         self.max_chars = max_chars
+        # >0 enables the condensed earlier-turns digest (global grounding).
+        self.summary_max_chars = summary_max_chars
         self.warnings: List[str] = []
 
     def judge_turns(self, conv: ParsedConversation,
@@ -60,7 +62,8 @@ class ModelBehaviorJudge:
                     ) -> Dict[int, List[Detection]]:
         self.warnings = []
         threshold = load_taxonomy()["display_threshold"]
-        windows = build_windows(conv.turns, self.window_turns, self.max_chars)
+        windows = build_windows(conv.turns, self.window_turns, self.max_chars,
+                                self.summary_max_chars)
         total = len(windows)
         results: Dict[int, List[Detection]] = {}
 

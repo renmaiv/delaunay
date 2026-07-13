@@ -25,6 +25,11 @@ Hybrid detection engine:
   (Anthropic Claude by default) behind a provider-agnostic interface with a
   deterministic mock provider for offline use and tests. The judge also produces
   the conversation summary and causal links.
+- Each per-turn judgment sees a full-fidelity window of the most recent
+  `judge.window_turns` turns **plus a condensed digest of everything earlier**
+  (`judge.rolling_summary` / `judge.summary_max_chars`), so it can catch
+  behaviors defined against earlier history — e.g. the model reversing a stance
+  it took many turns ago — without re-sending the whole transcript per turn.
 - **User-side categories can also come from the judge.** By default
   (`judge.score_user_turns: true`) the same per-turn judge call also scores the
   four user-side categories, so an Anthropic API key alone gives full coverage

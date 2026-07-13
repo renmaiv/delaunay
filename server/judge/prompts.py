@@ -141,7 +141,38 @@ near zero and nothing is quotable).
 it when a {MARKER_COT} section is present.
 - Put the four user-side scores under `user_turn`. Set `user_turn` to null when \
 no {MARKER_USER} section is present.
+- An "EARLIER IN THE CONVERSATION (condensed)" section may summarize turns that \
+came before this window. Use it to judge the reply against the model's earlier \
+stances and the overall trajectory (e.g. reversing a position it took earlier).
 - Return ONLY the JSON object; do not add commentary."""
+
+
+# Keep at most this many earliest + latest prior turns in the condensed digest;
+# the middle is collapsed into an omission marker so both the origin stances and
+# the recent build-up survive on long conversations.
+_PRIOR_HEAD = 4
+_PRIOR_TAIL = 8
+
+
+def _render_prior(prior: List) -> List[str]:
+    """Render the condensed earlier-turns digest, bounding very long prefixes by
+    keeping the first _PRIOR_HEAD and last _PRIOR_TAIL turns."""
+    if not prior:
+        return []
+    if len(prior) > _PRIOR_HEAD + _PRIOR_TAIL:
+        kept = prior[:_PRIOR_HEAD]
+        omitted = len(prior) - _PRIOR_HEAD - _PRIOR_TAIL
+        tail = prior[-_PRIOR_TAIL:]
+    else:
+        kept, omitted, tail = prior, 0, []
+    lines = ["EARLIER IN THE CONVERSATION (condensed):"]
+    for idx, turn in kept:
+        lines.append(f"[{idx}] {turn.role.value}: {turn.content}")
+    if omitted:
+        lines.append(f"…[{omitted} earlier turns omitted]…")
+    for idx, turn in tail:
+        lines.append(f"[{idx}] {turn.role.value}: {turn.content}")
+    return lines
 
 
 CONVERSATION_JUDGE_SYSTEM = f"""\
@@ -165,6 +196,12 @@ Return ONLY the JSON object; do not add commentary."""
 def render_turn_prompt(window: JudgeWindow) -> str:
     """Render the per-turn judge prompt for one assistant target turn."""
     lines: List[str] = []
+
+    prior_lines = _render_prior(window.prior)
+    if prior_lines:
+        lines.extend(prior_lines)
+        lines.append("")  # blank line before the full-fidelity window
+
     for idx, turn in window.context:
         lines.append(f"[{idx}] {turn.role.value}: {turn.content}")
 

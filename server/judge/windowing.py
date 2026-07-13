@@ -6,7 +6,7 @@ the user turn (or before the assistant turn when there is no preceding user
 turn). Context turn content is truncated via `truncate`; input turns are never
 mutated — context entries are copies.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 from server.schemas import ParsedTurn, Role
@@ -20,6 +20,9 @@ class JudgeWindow:
     context: List[Tuple[int, ParsedTurn]]          # (index, turn), oldest first
     user_turn: Optional[Tuple[int, ParsedTurn]]    # nearest preceding user turn
     assistant_turn: Tuple[int, ParsedTurn]
+    # Condensed digest of turns *before* the context window, for global
+    # grounding (empty unless summary_max_chars > 0). Oldest first.
+    prior: List[Tuple[int, ParsedTurn]] = field(default_factory=list)
 
 
 def truncate(text: str, max_chars: int) -> str:
@@ -38,7 +41,7 @@ def _truncated_copy(turn: ParsedTurn, max_chars: int) -> ParsedTurn:
 
 
 def build_windows(turns: List[ParsedTurn], window_turns: int,
-                  max_chars: int) -> List[JudgeWindow]:
+                  max_chars: int, summary_max_chars: int = 0) -> List[JudgeWindow]:
     windows: List[JudgeWindow] = []
     for i, turn in enumerate(turns):
         if turn.role is not Role.assistant:
@@ -55,10 +58,17 @@ def build_windows(turns: List[ParsedTurn], window_turns: int,
         context = [(k, _truncated_copy(turns[k], max_chars))
                    for k in range(start, anchor)]
 
+        # Everything before the context window, condensed for global grounding.
+        prior: List[Tuple[int, ParsedTurn]] = []
+        if summary_max_chars > 0 and start > 0:
+            prior = [(k, _truncated_copy(turns[k], summary_max_chars))
+                     for k in range(0, start)]
+
         windows.append(JudgeWindow(
             target_index=i,
             context=context,
             user_turn=user_turn,
             assistant_turn=(i, turns[i]),
+            prior=prior,
         ))
     return windows
