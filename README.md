@@ -5,7 +5,7 @@
 
 
 
-## [Delaunay](https://delaunay1.vercel.app/)
+## [Try it on Vercel](https://delaunay1.vercel.app/)
 
 It's a simple mock tool:
 
