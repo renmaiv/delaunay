@@ -1,14 +1,16 @@
 import type { Detection } from "../types";
-import { TAXONOMY, scoreColor } from "../taxonomy";
+import { TAXONOMY } from "../taxonomy";
 
 interface DetectionCaptionProps {
   detections: Detection[];
 }
 
 /**
- * Small caption row rendered ABOVE a flagged bubble. Each detection reads
- * "{short} {score.toFixed(1)}" colored by scoreColor(score). A 1px vertical
- * connector line to the bubble is drawn via the ::before pseudo-element (CSS).
+ * White caption list rendered ABOVE a flagged bubble, one line per
+ * detection: "{short} {score.toFixed(1)}". Each detection's connecting line
+ * + outline rhombus render on the spectre bar itself (SpectreBar.tsx),
+ * stacked in the same order as these lines, so the caption visually sits
+ * above its marker without the two components needing pixel-level coupling.
  */
 export default function DetectionCaption({ detections }: DetectionCaptionProps) {
   return (
@@ -19,7 +21,6 @@ export default function DetectionCaption({ detections }: DetectionCaptionProps) 
           className="detection-caption__item"
           data-category={d.category}
           data-score={d.score}
-          style={{ color: scoreColor(d.score) }}
           title={d.rationale ?? d.evidence_span ?? ""}
         >
           {TAXONOMY.categories[d.category].short} {d.score.toFixed(1)}

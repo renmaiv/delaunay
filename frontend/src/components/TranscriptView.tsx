@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { CausalLink, DetectionCategory, Turn } from "../types";
 import TurnBubble from "./TurnBubble";
 import SpectreBar, {
+  markersFromMeasurements,
   segmentsFromMeasurements,
+  type SpectreMarker,
   type SpectreSegment,
 } from "./SpectreBar";
 import CausalLinkChip from "./CausalLinkChip";
@@ -25,6 +27,7 @@ export default function TranscriptView({
   const wrapRef = useRef<HTMLDivElement>(null);
   const turnRefs = useRef<Map<number, HTMLElement>>(new Map());
   const [segments, setSegments] = useState<SpectreSegment[]>([]);
+  const [markers, setMarkers] = useState<SpectreMarker[]>([]);
   const [totalHeight, setTotalHeight] = useState(0);
 
   const measure = useCallback(() => {
@@ -37,6 +40,7 @@ export default function TranscriptView({
       if (top + height > maxBottom) maxBottom = top + height;
     }
     setSegments(segmentsFromMeasurements(turns, measurements, filters));
+    setMarkers(markersFromMeasurements(turns, measurements, filters));
     const wrap = wrapRef.current;
     setTotalHeight(Math.max(maxBottom, wrap ? wrap.scrollHeight : 0));
   }, [turns, filters]);
@@ -75,7 +79,7 @@ export default function TranscriptView({
 
   return (
     <div className="transcript-wrap" ref={wrapRef}>
-      <SpectreBar segments={segments} totalHeight={totalHeight} />
+      <SpectreBar segments={segments} markers={markers} totalHeight={totalHeight} />
       <div className="transcript-column">
         {turns.map((turn) => {
           const chips =
