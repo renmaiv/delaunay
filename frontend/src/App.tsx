@@ -10,6 +10,8 @@ import Spinner from "./components/Spinner";
 import TranscriptView from "./components/TranscriptView";
 import Tabs from "./components/Tabs";
 import FilterPanel from "./components/FilterPanel";
+import ConversationsButton from "./components/ConversationsButton";
+import ConversationsPage from "./components/ConversationsPage";
 
 type AppState =
   | { phase: "idle" }
@@ -37,6 +39,7 @@ export default function App() {
     isExample: true,
   });
   const [activeTab, setActiveTab] = useState<"model" | "user">("model");
+  const [view, setView] = useState<"analysis" | "conversations">("analysis");
   const [filters, setFilters] =
     useState<Record<DetectionCategory, boolean>>(initialFilters);
 
@@ -78,7 +81,7 @@ export default function App() {
     <div className="app">
       <header className="app__header">
         <div className="app__title">
-          <h1>Semantic Observability</h1>
+          <h1>Delaunay</h1>
           <p className="app__blurb">{HEADER_BLURB}</p>
         </div>
         <UploadCTA onFile={handleFile} disabled={analyzing} />
@@ -118,7 +121,11 @@ export default function App() {
         </div>
       )}
 
-      {result && (
+      {result && view === "conversations" && (
+        <ConversationsPage onBack={() => setView("analysis")} />
+      )}
+
+      {result && view === "analysis" && (
         <>
           <SummaryCard
             summary={result.summary}
@@ -139,6 +146,7 @@ export default function App() {
                 onChange={setFilter}
                 hasCot={hasCot}
               />
+              <ConversationsButton onClick={() => setView("conversations")} />
             </div>
             <div className="app__transcript" data-testid="transcript-slot">
               <TranscriptView

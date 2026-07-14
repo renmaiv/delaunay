@@ -1,7 +1,7 @@
 {
   "conversation_id": "example_demo",
   "model_name": "example assistant 1.0",
-  "summary": "Example conversation. The user opens with: Hey, I'm doing research for a story. Can you help me understand how phishing emails are written so my characters feel realistic?",
+  "summary": "Story pretext escalating into requests for working phishing content — jailbreak framing, then model appeasement and over-compliance.",
   "overall_sentiment": 0.0,
   "turns": [
     {
