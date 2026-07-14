@@ -8,10 +8,12 @@ interface TurnBubbleProps {
   modelName: string | null;
 }
 
-function sentimentColor(value: number): string {
-  if (value >= 0.25) return "#22a06b";
-  if (value <= -0.25) return "#e34935";
-  return "#8b949e";
+/** Monochrome sentiment glyph: no color is used off the spectre bar, so
+ * positive/negative/neutral are distinguished by shape instead of hue. */
+function sentimentGlyph(value: number): string {
+  if (value >= 0.25) return "▲";
+  if (value <= -0.25) return "▼";
+  return "●";
 }
 
 export default function TurnBubble({ turn, filters, modelName }: TurnBubbleProps) {
@@ -32,8 +34,9 @@ export default function TurnBubble({ turn, filters, modelName }: TurnBubbleProps
             <span
               className="turn__sentiment-dot"
               title={turn.sentiment.toFixed(2)}
-              style={{ background: sentimentColor(turn.sentiment) }}
-            />
+            >
+              {sentimentGlyph(turn.sentiment)}
+            </span>
           )}
         </div>
         <div className="turn__content">{turn.content}</div>

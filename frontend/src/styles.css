@@ -1,3 +1,15 @@
+/* --- fonts --- */
+@font-face {
+  font-family: "Opening Hours Sans";
+  src:
+    url("./assets/fonts/OpeningHoursSansRegular.woff2") format("woff2"),
+    url("./assets/fonts/OpeningHoursSansRegular.woff") format("woff"),
+    url("./assets/fonts/OpeningHoursSansRegular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* --- reset + variables --- */
 *,
 *::before,
@@ -12,16 +24,18 @@ body,
   height: 100%;
 }
 :root {
-  --bg: #0f1116;
-  --surface: #1a1d24;
-  --surface-2: #22262f;
-  --border: #2e333d;
-  --text: #e6e8eb;
-  --text-dim: #8b949e;
-  --accent: #4c8dff;
+  /* Monochrome (shadcn-style) palette. The ONLY color in this app lives on
+     the spectre bar (severity bands from shared/taxonomy.json) — everything
+     else is black/white/gray. */
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #171717;
+  --border: #262626;
+  --text: #ffffff;
+  --text-dim: #a3a3a3;
   --radius: 8px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
+  --font: "Opening Hours Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
 }
 body {
   font-family: var(--font);
@@ -72,9 +86,9 @@ button {
   cursor: not-allowed;
 }
 .btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
   font-weight: 600;
 }
 
@@ -135,7 +149,7 @@ button {
   width: 18px;
   height: 18px;
   border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  border-top-color: var(--text);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -156,15 +170,22 @@ button {
 
 /* Error panel */
 .app__error {
-  border: 1px solid #e34935;
-  background: rgba(227, 73, 53, 0.12);
-  color: #ffb4a8;
+  border: 2px solid var(--text);
+  background: var(--surface);
+  color: var(--text);
   padding: 1rem;
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.6rem;
+}
+.app__error::before {
+  content: "Error";
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
 }
 
 /* Summary card */
@@ -199,19 +220,28 @@ button {
   background: var(--surface-2);
 }
 .chip--model {
-  color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
 }
 .summary-card__warnings {
+  position: relative;
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  background: rgba(245, 205, 71, 0.12);
-  border: 1px solid #f5cd47;
-  color: #f5cd47;
+  background: var(--surface-2);
+  border: 1px solid var(--text-dim);
+  color: var(--text);
   border-radius: var(--radius);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 1.9rem;
   margin-bottom: 0.75rem;
   font-size: 0.85rem;
+}
+.summary-card__warnings::before {
+  content: "⚠";
+  position: absolute;
+  left: 0.7rem;
+  top: 0.55rem;
+  font-weight: 700;
 }
 .summary-card__warnings ul {
   margin: 0;
@@ -232,14 +262,14 @@ button {
   gap: 0.35rem;
   padding: 0.15rem 0.55rem;
   border-radius: 999px;
-  border: 1px solid;
+  border: 1px solid var(--border);
+  color: var(--text);
   font-size: 0.8rem;
   font-weight: 600;
 }
 .sentiment-badge__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  font-size: 0.65rem;
+  line-height: 1;
 }
 
 /* Analysis two-column region */
@@ -262,16 +292,28 @@ button {
   position: relative;
   overflow-y: auto;
   max-height: 70vh;
-  padding-left: 32px;
+  /* Widened so each detection note's connector line has room to run from
+     the bar out to where the caption begins. */
+  padding-left: 44px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+/* Wrapper so the marker layer (rhombus + line) can extend past the bar's own
+   overflow:hidden box without being clipped. */
+.spectre-bar-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  pointer-events: none;
 }
 .spectre-bar {
   position: absolute;
   left: 6px;
   top: 0;
   width: 20px;
+  height: 100%; /* fills spectre-bar-layer's explicit pixel height */
   border-radius: 10px;
   overflow: hidden;
 }
@@ -280,6 +322,41 @@ button {
   left: 0;
   width: 20px;
   border-radius: 10px;
+}
+
+/* Detection note marker: a plain white 16px outline rhombus sitting on the
+   bar, with a 2px horizontal line running from its right corner into the
+   gutter, toward the caption that sits above it. */
+.spectre-bar__markers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.spectre-bar__marker {
+  position: absolute;
+  left: 0;
+  height: 0;
+}
+.spectre-bar__rhombus {
+  position: absolute;
+  left: 16px; /* bar center: bar left(6) + width(20)/2 */
+  top: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 2px solid var(--text);
+  background: transparent;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.spectre-bar__connector-line {
+  position: absolute;
+  left: 26px; /* bar's right edge */
+  top: -1px;
+  width: 18px;
+  height: 2px;
+  background: var(--text);
 }
 .transcript-column {
   padding: 0.75rem 0.75rem 0.75rem 0;
@@ -314,14 +391,11 @@ button {
   max-width: 80%;
   padding: 0.6rem 0.8rem;
   border-radius: var(--radius);
-}
-.turn--user .turn__bubble {
+  /* Both roles share one background — distinguished only by alignment and
+     the role label, not color. */
   background: var(--surface-2);
-}
-.turn--assistant .turn__bubble {
-  background: #fbfcfe;
-  color: #14171c;
-  border: 1px solid #d5dae2;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 .turn__role {
   display: flex;
@@ -334,9 +408,9 @@ button {
   margin-bottom: 0.25rem;
 }
 .turn__sentiment-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  font-size: 0.6rem;
+  line-height: 1;
+  color: var(--text-dim);
 }
 .turn__content {
   white-space: pre-wrap;
@@ -350,25 +424,17 @@ button {
   cursor: pointer;
 }
 
-/* Detection caption above a flagged bubble */
+/* Detection caption above a flagged bubble. Plain white text — the
+   connecting line + rhombus live on the spectre bar (SpectreBar.tsx), not
+   here; the caption simply sits above them via shared vertical position. */
 .detection-caption {
-  position: relative;
   display: flex;
-  gap: 0.6rem;
+  flex-direction: column;
+  gap: 0.15rem;
   font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 0.25rem;
-  padding-bottom: 0.25rem;
-}
-.detection-caption::before {
-  content: "";
-  position: absolute;
-  left: 0.5rem;
-  bottom: -0.25rem;
-  width: 1px;
-  height: 0.5rem;
-  background: currentColor;
-  opacity: 0.4;
+  color: var(--text);
+  margin-bottom: 0.35rem;
 }
 .detection-caption__item {
   white-space: nowrap;
@@ -387,7 +453,7 @@ button {
 }
 .causal-chip:hover {
   color: var(--text);
-  border-color: var(--accent);
+  border-color: var(--text);
 }
 
 /* --- E3: tabs & filters --- */
@@ -407,7 +473,7 @@ button {
 }
 .tabs__tab--active {
   color: var(--text);
-  border-color: var(--accent);
+  border-color: var(--text);
   background: var(--surface);
 }
 .filter-panel {
@@ -436,16 +502,17 @@ button {
   gap: 0.6rem;
   padding: 0.6rem 0.9rem;
   margin: 0.75rem 0;
-  border: 1px solid var(--border, #d0d7de);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: color-mix(in srgb, currentColor 4%, transparent);
+  background: var(--surface);
+  color: var(--text);
   font-size: 0.9rem;
 }
 .example-badge__dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: #f5820b;
+  background: var(--text);
   flex: 0 0 auto;
 }
 .example-badge__text {
@@ -453,7 +520,7 @@ button {
 }
 .example-badge__clear {
   flex: 0 0 auto;
-  border: 1px solid var(--border, #d0d7de);
+  border: 1px solid var(--border);
   background: transparent;
   color: inherit;
   border-radius: 6px;
@@ -470,5 +537,5 @@ button {
   gap: 0.6rem;
   flex-wrap: wrap;
   padding: 2rem 0;
-  color: var(--muted, #57606a);
+  color: var(--text-dim);
 }
