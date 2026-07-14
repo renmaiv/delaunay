@@ -315,21 +315,23 @@ class MockJudgeProvider:
 
     # -- conversation mode --
 
-    def _judge_conversation(self, user: str) -> dict:
-        # Pull the first user turn's content out of the rendered transcript
-        # ("[i] user: <content>") for a readable one-line summary.
-        first_user = ""
-        for line in user.splitlines():
-            m = re.match(r"\[\d+\]\s+user:\s*(.+)", line.strip())
-            if m:
-                first_user = m.group(1).strip()
-                break
-        if not first_user:
-            first_user = user.strip().splitlines()[0] if user.strip() else ""
-        summary = ("Example conversation. The user opens with: "
-                   + first_user[:140])
+    # Short human phrase per category for the mock's trigger-word summary
+    # (e.g. "Jailbreak attempts and model over-compliance."), not a quote of
+    # the transcript.
+    _SUMMARY_PHRASES = {
+        "jailbreak_steering": "jailbreak attempts",
+        "social_engineering": "social engineering",
+        "coercive_pressure": "user pressure",
+        "repair_request": "repeated clarification requests",
+        "safety_triggered": "model refusals",
+        "appeasement": "model over-agreement",
+        "overcompliant": "model over-compliance",
+        "cot_divergence": "reasoning/answer divergence",
+    }
 
+    def _judge_conversation(self, user: str) -> dict:
         links = []
+        signal_categories: list = []  # first-seen order, deduped
         header = user.find(DETECTED_SIGNALS_HEADER)
         if header != -1:
             section = user[header + len(DETECTED_SIGNALS_HEADER):]
@@ -339,6 +341,9 @@ class MockJudgeProvider:
                 if m:
                     parsed.append((int(m.group(1)), m.group(2),
                                    m.group(3), m.group(4)))
+                    cat = m.group(3)
+                    if cat not in signal_categories:
+                        signal_categories.append(cat)
             for (ti, role_a, cat_a, _sa), (tj, role_b, cat_b, _sb) in zip(
                     parsed, parsed[1:]):
                 if role_a == "user" and role_b == "assistant":
@@ -351,8 +356,26 @@ class MockJudgeProvider:
                                       f"at turn {tj}."),
                     })
 
+        summary = self._trigger_summary(signal_categories)
         return {"summary": summary, "overall_sentiment": 0.0,
                 "causal_links": links}
+
+    @classmethod
+    def _trigger_summary(cls, categories: list) -> str:
+        """A short (few-word) trigger summary from the flagged categories,
+        e.g. "Jailbreak attempts and model over-compliance." — not a quote of
+        the conversation."""
+        if not categories:
+            return "No notable pressure or compliance issues detected."
+        phrases = [cls._SUMMARY_PHRASES.get(c, c.replace("_", " "))
+                   for c in categories[:3]]
+        if len(phrases) == 1:
+            joined = phrases[0]
+        elif len(phrases) == 2:
+            joined = f"{phrases[0]} and {phrases[1]}"
+        else:
+            joined = f"{', '.join(phrases[:-1])}, and {phrases[-1]}"
+        return joined[0].upper() + joined[1:] + "."
 
     @staticmethod
     def _between(text: str, start: str, end: str):
