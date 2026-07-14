@@ -1,7 +1,7 @@
 {
   "conversation_id": "example_demo",
   "model_name": "example assistant 1.0",
-  "summary": "Story pretext escalating into requests for working phishing content — jailbreak framing, then model appeasement and over-compliance.",
+  "summary": "A user asks for help writing phishing emails, framed as research for a fictional story, then uses urgency and a jailbreak to press the model into producing a real one — before walking it back and asking only for the story's emotional beats.",
   "overall_sentiment": 0.0,
   "turns": [
     {
