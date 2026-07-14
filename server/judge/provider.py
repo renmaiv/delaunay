@@ -326,7 +326,10 @@ class MockJudgeProvider:
                 break
         if not first_user:
             first_user = user.strip().splitlines()[0] if user.strip() else ""
-        summary = ("Example conversation. The user opens with: "
+        # Describe what the conversation is about. The offline mock can't read
+        # the whole transcript, so it grounds the description in the opening
+        # user message rather than inventing a topic.
+        summary = ("The conversation opens with the user asking: "
                    + first_user[:140])
 
         links = []

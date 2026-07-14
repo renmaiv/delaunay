@@ -1,20 +1,38 @@
-# Semantic Observability
+# Delaunay
 
-Upload a chat transcript (optionally with the model's chain of thought) and get
-a GradCAM-inspired "spectre" heatmap over the conversation that highlights where
-things went sideways — jailbreak/steering attempts, social engineering, coercive
+### What's that about
+
+
+
+
+### [Try it on Vercel](https://delaunay1.vercel.app/)
+
+It's a simple mock tool:
+
+1. Understand what user behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later. You probably need to imitate human behavior to poke the human-shaped tool to see something interesting.
+
+2. Could be an addition to traditional observability tools if you deal with masses of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcamfor vision and thought, what if you could "compress" sentiment issues into a tiny 100×100 px.
+
+Idk, why i called it like that, i just like Sonia's geometric things.
+
+
+
+### Use
+
+Upload a chat transcript (optionally with the model's chain of thought) and get 
+highlights where things went sideways, like jailbreak/steering attempts, social engineering, coercive
 pressure, and repair requests on the user side; safety-triggering, appeasement,
 over-compliance, and chain-of-thought divergence on the model side — plus a
 short conversation summary and causal links between user triggers and model
-effects.
+effects. I don't store or see your chats in any way.
 
-The goal is triage: instead of reading a 50-turn chat, jump straight to the
-flagged turns, see the likelihood and evidence, and understand what user
-behavior produced what model behavior.
+Bring your own Anthropic key to use it beyond demo, and rebuild the page. 
 
-## Architecture
 
-Hybrid detection engine:
+
+### Tracking
+
+Hybrid detection:
 
 - **User-side signals** are scored per turn by local encoder models (a
   prompt-injection classifier, a sentiment model, and a zero-shot NLI model for
@@ -37,11 +55,8 @@ Hybrid detection engine:
   you install the encoder models they take over; otherwise the judge covers the
   user side, with the regex rules as the last-resort offline floor.
 
-The frontend is a React + Vite single-page app served by the FastAPI backend.
-The detection taxonomy (categories, tooltip copy, heatmap color bands) lives in
-one place — `shared/taxonomy.json` — consumed by both backend and frontend.
 
-## Quickstart
+### Quickstart
 
 ```bash
 # 1. backend (core, always works with the mock judge)
@@ -67,7 +82,7 @@ default) the LLM judge scores the user-side categories, and the regex rules
 scorer is the offline floor when there is no API key either. Model-side
 behaviors always come from the judge.
 
-## API
+### API
 
 | Method & path | Purpose |
 |---|---|
@@ -77,7 +92,7 @@ behaviors always come from the judge.
 | `GET /api/health` | judge provider + encoder availability |
 | `GET /` | the built SPA |
 
-## Accepted upload formats
+### Accepted upload formats
 
 - **JSON**: `{"messages": [...]}` or `{"turns": [...]}`, a bare list of message
   objects, or `{"conversations": [...]}` (first one used). Optional
@@ -90,27 +105,18 @@ behaviors always come from the judge.
 Message roles are normalized (`human`→user, `model`/`ai`/`bot`→assistant). A
 detected model name renders in the UI as e.g. `Model: chatgpt 5.0`.
 
-## Calibration note
+### Calibration note
 
 All displayed likelihoods are raw model scores (softmax / NLI entailment /
 LLM-judge self-reported). They are **not** calibrated probabilities; treat 0.9
 as "strong signal", not "90% chance". Every detection carries
 `calibrated: false` until a calibration pass is added.
 
-## Demo / example on load
+### Demo 
 
 The site opens with a **pre-evaluated example conversation** already rendered —
 spectre heatmap, detections, tabs, summary, and causal links — so a visitor sees
 the tool working with no upload and no backend call (the example is bundled into
-the build). A "Clear" control dismisses it; uploading a chat replaces it.
-
-The committed example (`frontend/src/exampleAnalysis.json`) is generated from the
-curated transcript `examples/example_conversation.json`. Regenerate it with the
-real judge:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-python -m eval.make_example --provider anthropic   # writes frontend/src/exampleAnalysis.json
-cd frontend && npm run build
+the build). 
 ```
 

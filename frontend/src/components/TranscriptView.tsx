@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CausalLink, DetectionCategory, Turn } from "../types";
+import { TAXONOMY } from "../taxonomy";
 import TurnBubble from "./TurnBubble";
 import SpectreBar, {
   markersFromMeasurements,
@@ -59,6 +60,41 @@ export default function TranscriptView({
     return () => ro.disconnect();
   }, [measure]);
 
+  // Turns carrying at least one visible detection ("captions") — the targets
+  // the on-scroll navigation bar steps through.
+  const flaggedTurns = turns
+    .filter((t) =>
+      t.detections.some(
+        (d) => filters[d.category] && d.score >= TAXONOMY.display_threshold,
+      ),
+    )
+    .map((t) => t.index);
+
+  const [navVisible, setNavVisible] = useState(false);
+  const [navPos, setNavPos] = useState(0);
+
+  const handleScroll = () => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const st = wrap.scrollTop;
+    setNavVisible(st > 24);
+    let pos = 0;
+    for (let i = 0; i < flaggedTurns.length; i++) {
+      const el = turnRefs.current.get(flaggedTurns[i]);
+      if (el && el.offsetTop - 8 <= st) pos = i;
+    }
+    setNavPos(pos);
+  };
+
+  const goToCaption = (pos: number) => {
+    if (flaggedTurns.length === 0) return;
+    const clamped = Math.max(0, Math.min(flaggedTurns.length - 1, pos));
+    const el = turnRefs.current.get(flaggedTurns[clamped]);
+    const wrap = wrapRef.current;
+    if (el && wrap) wrap.scrollTo({ top: el.offsetTop - 8, behavior: "smooth" });
+    setNavPos(clamped);
+  };
+
   const navigateTo = useCallback((fromTurn: number) => {
     const el = turnRefs.current.get(fromTurn);
     if (!el) return;
@@ -78,8 +114,39 @@ export default function TranscriptView({
   }
 
   return (
-    <div className="transcript-wrap" ref={wrapRef}>
+    <div className="transcript-wrap" ref={wrapRef} onScroll={handleScroll}>
       <SpectreBar segments={segments} markers={markers} totalHeight={totalHeight} />
+      {flaggedTurns.length > 0 && (
+        <div
+          className={`transcript-nav${navVisible ? " transcript-nav--visible" : ""}`}
+        >
+          <button
+            type="button"
+            className="transcript-nav__btn"
+            aria-label="Previous detection"
+            disabled={navPos <= 0}
+            onClick={() => goToCaption(navPos - 1)}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span className="transcript-nav__counter">
+            {navPos + 1} / {flaggedTurns.length}
+          </span>
+          <button
+            type="button"
+            className="transcript-nav__btn"
+            aria-label="Next detection"
+            disabled={navPos >= flaggedTurns.length - 1}
+            onClick={() => goToCaption(navPos + 1)}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      )}
       <div className="transcript-column">
         {turns.map((turn) => {
           const chips =

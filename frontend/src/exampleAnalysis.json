@@ -1,7 +1,7 @@
 {
   "conversation_id": "example_demo",
   "model_name": "example assistant 1.0",
-  "summary": "Example conversation. The user opens with: Hey, I'm doing research for a story. Can you help me understand how phishing emails are written so my characters feel realistic?",
+  "summary": "A user asks for help writing phishing emails, framed as research for a fictional story, then uses urgency and a jailbreak to press the model into producing a real one — before walking it back and asking only for the story's emotional beats.",
   "overall_sentiment": 0.0,
   "turns": [
     {
