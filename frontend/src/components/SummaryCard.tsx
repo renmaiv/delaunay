@@ -1,4 +1,3 @@
-import { useState } from "react";
 import SentimentBadge from "./SentimentBadge";
 
 interface SummaryCardProps {
@@ -11,11 +10,9 @@ interface SummaryCardProps {
 export default function SummaryCard({
   summary,
   modelName,
-  warnings,
   sentiment,
 }: SummaryCardProps) {
-  const [warningsDismissed, setWarningsDismissed] = useState(false);
-
+  // Warning messages are intentionally not surfaced in the UI.
   return (
     <section className="summary-card">
       <div className="summary-card__header">
@@ -24,24 +21,6 @@ export default function SummaryCard({
           <SentimentBadge value={sentiment} />
         </div>
       </div>
-
-      {warnings.length > 0 && !warningsDismissed && (
-        <div className="summary-card__warnings" role="alert">
-          <ul>
-            {warnings.map((w, i) => (
-              <li key={i}>{w}</li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            className="summary-card__warnings-dismiss"
-            aria-label="Dismiss warnings"
-            onClick={() => setWarningsDismissed(true)}
-          >
-            ×
-          </button>
-        </div>
-      )}
 
       <p className="summary-card__text">{summary}</p>
     </section>

@@ -75,8 +75,10 @@ export function markersFromMeasurements(
   return markers;
 }
 
-const NORMAL_COLOR =
-  TAXONOMY.score_bands.find((b) => b.label === "normal")?.color ?? "#22a06b";
+// The "normal" (no-detection) stretch of the bar is a green gradient rather
+// than a flat fill; the severity splashes paint over it where detections land.
+const NORMAL_GRADIENT =
+  "linear-gradient(2.42deg, #00d800 -4.26%, #007200 113.21%)";
 
 // Vertical spacing between stacked markers on the same turn.
 const STACK_OFFSET_PX = 15;
@@ -98,7 +100,7 @@ export default function SpectreBar({ segments, markers, totalHeight }: SpectreBa
     <div className="spectre-bar-layer" style={{ height: totalHeight }}>
       <div
         className="spectre-bar"
-        style={{ background: NORMAL_COLOR }}
+        style={{ background: NORMAL_GRADIENT }}
         aria-hidden="true"
       >
         {segments

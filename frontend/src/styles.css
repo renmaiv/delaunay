@@ -71,6 +71,7 @@ button {
 .app__blurb {
   color: var(--text-dim);
   max-width: 640px;
+  font-size: 14px;
 }
 
 .btn {
@@ -131,6 +132,8 @@ button {
   border-radius: var(--radius);
   font-size: 0.8rem;
   line-height: 1.4;
+  /* Tooltip copy is always grey, regardless of the surrounding text color. */
+  color: var(--text-dim);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   opacity: 0;
   visibility: hidden;
@@ -346,18 +349,63 @@ button {
   width: 16px;
   height: 16px;
   box-sizing: border-box;
-  border: 2px solid var(--text);
+  border: 1px solid var(--text);
   background: transparent;
   transform: translate(-50%, -50%) rotate(45deg);
 }
 .spectre-bar__connector-line {
   position: absolute;
   left: 26px; /* bar's right edge */
-  top: -1px;
+  top: 0;
   width: 18px;
-  height: 2px;
+  height: 1px;
   background: var(--text);
 }
+/* On-scroll caption navigation bar: a semi-transparent strip that sticks to
+   the top of the transcript once scrolled, with up/down arrows and a
+   position counter to jump between flagged turns. */
+.transcript-nav {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(10, 10, 10, 0.72);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+}
+.transcript-nav--visible {
+  opacity: 1;
+  visibility: visible;
+}
+.transcript-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.transcript-nav__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.transcript-nav__counter {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 .transcript-column {
   padding: 0.75rem 0.75rem 0.75rem 0;
 }
@@ -370,7 +418,7 @@ button {
 }
 @keyframes flash-highlight {
   0% {
-    background: rgba(76, 141, 255, 0.35);
+    background: rgba(255, 255, 255, 0.09);
   }
   100% {
     background: transparent;
@@ -494,6 +542,38 @@ button {
 .filter-panel__label {
   flex: 1;
 }
+/* White checkbox with a black checkmark drawn in a 1.5px stroke. */
+.filter-panel__row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  border: 1.5px solid var(--text);
+  border-radius: 3px;
+  background: var(--text);
+  cursor: pointer;
+  position: relative;
+}
+.filter-panel__row input[type="checkbox"]:not(:checked) {
+  background: transparent;
+}
+.filter-panel__row input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--bg);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.filter-panel__row input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--text-dim);
+  outline-offset: 1px;
+}
 
 /* --- example badge & idle (example-on-load) --- */
 .example-badge {
@@ -506,7 +586,7 @@ button {
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 14px;
 }
 .example-badge__dot {
   width: 9px;
@@ -537,5 +617,71 @@ button {
   gap: 0.6rem;
   flex-wrap: wrap;
   padding: 2rem 0;
+  color: var(--text-dim);
+}
+
+/* --- Conversations button + page --- */
+.conversations-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.8rem;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.conversations-btn:hover {
+  border-color: var(--text);
+}
+.conversations-btn__arrow {
+  flex: 0 0 auto;
+}
+
+.conversations-page__toolbar {
+  margin-bottom: 1rem;
+}
+.conversations-page__toolbar .conversations-btn {
+  width: auto;
+  margin-top: 0;
+}
+
+/* Grid of compressed conversation previews. The 1px gap shows through as the
+   grid lines (10% white). */
+.conversations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.conversation-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.85rem 0.5rem;
+  background: var(--surface);
+  cursor: pointer;
+}
+.conversation-cell:hover {
+  background: var(--surface-2);
+}
+.conversation-cell__spine {
+  width: 100px;
+  height: 100px;
+  border-radius: 4px;
+}
+.conversation-cell__id {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.conversation-cell__turns {
+  font-size: 12px;
   color: var(--text-dim);
 }

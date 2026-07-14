@@ -23,20 +23,20 @@ function turn(detections: Detection[]): Turn {
 
 describe("scoreColor", () => {
   it("maps scores to the exact band colors", () => {
-    expect(scoreColor(0.0)).toBe("#22a06b");
-    expect(scoreColor(0.2)).toBe("#f5cd47");
-    expect(scoreColor(0.5)).toBe("#f5820b");
-    expect(scoreColor(0.9)).toBe("#e34935");
+    expect(scoreColor(0.0)).toBe("#00a000");
+    expect(scoreColor(0.2)).toBe("#f2ea00");
+    expect(scoreColor(0.5)).toBe("#ff8000");
+    expect(scoreColor(0.9)).toBe("#ff3700");
   });
 
   it("treats the last band as max-inclusive", () => {
-    expect(scoreColor(1.0)).toBe("#e34935");
+    expect(scoreColor(1.0)).toBe("#ff3700");
   });
 
   it("uses band boundaries as [min, max) except the last band", () => {
-    expect(scoreColor(0.1)).toBe("#f5cd47");
-    expect(scoreColor(0.35)).toBe("#f5820b");
-    expect(scoreColor(0.75)).toBe("#e34935");
+    expect(scoreColor(0.1)).toBe("#f2ea00");
+    expect(scoreColor(0.35)).toBe("#ff8000");
+    expect(scoreColor(0.75)).toBe("#ff3700");
   });
 });
 
