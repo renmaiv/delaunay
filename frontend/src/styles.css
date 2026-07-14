@@ -649,28 +649,24 @@ button {
   margin-top: 0;
 }
 
-/* Grid of compressed conversation previews. The 1px gap shows through as the
-   grid lines (10% white). */
+/* Grid of compressed conversation previews. Cells are sized to the 100×100
+   spectre spine with a 24px gap between them. */
 .conversations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  overflow: hidden;
+  grid-template-columns: repeat(auto-fill, 100px);
+  gap: 24px;
+  justify-content: start;
 }
 .conversation-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.85rem 0.5rem;
-  background: var(--surface);
   cursor: pointer;
 }
-.conversation-cell:hover {
-  background: var(--surface-2);
+.conversation-cell:hover .conversation-cell__spine {
+  outline: 1px solid var(--text-dim);
+  outline-offset: 2px;
 }
 .conversation-cell__spine {
   width: 100px;
