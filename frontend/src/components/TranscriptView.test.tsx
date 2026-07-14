@@ -121,4 +121,29 @@ describe("TranscriptView", () => {
     expect(chip.textContent).toContain("appeasement");
     expect(chip.textContent).toContain("0.8");
   });
+
+  it("renders one spectre-bar rhombus marker per visible detection on a turn", () => {
+    const multi: AnalysisResult = {
+      ...fixture,
+      turns: [
+        turn(0, "user"),
+        turn(1, "assistant", {
+          detections: [det("appeasement", 0.6), det("overcompliant", 0.7)],
+        }),
+      ],
+      causal_links: [],
+    };
+    const { container } = render(
+      <TranscriptView
+        turns={multi.turns}
+        causalLinks={multi.causal_links}
+        modelName={null}
+        filters={allOn()}
+      />,
+    );
+    const rhombi = container.querySelectorAll(".spectre-bar__marker");
+    expect(rhombi.length).toBe(2);
+    const categories = Array.from(rhombi).map((el) => el.getAttribute("data-category"));
+    expect(categories).toEqual(["appeasement", "overcompliant"]);
+  });
 });

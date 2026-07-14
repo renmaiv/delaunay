@@ -2,27 +2,24 @@ interface SentimentBadgeProps {
   value: number;
 }
 
-// Sentiment uses its own palette — NOT the detection score bands.
-const POSITIVE = "#22a06b";
-const NEGATIVE = "#e34935";
-const NEUTRAL = "#8b949e";
-
+// Monochrome: no color is used off the spectre bar, so positive/negative/
+// neutral are distinguished by glyph + weight, not hue.
 export default function SentimentBadge({ value }: SentimentBadgeProps) {
   let label: string;
-  let color: string;
+  let glyph: string;
   if (value >= 0.25) {
     label = "Positive";
-    color = POSITIVE;
+    glyph = "▲";
   } else if (value <= -0.25) {
     label = "Negative";
-    color = NEGATIVE;
+    glyph = "▼";
   } else {
     label = "Neutral";
-    color = NEUTRAL;
+    glyph = "●";
   }
   return (
-    <span className="sentiment-badge" style={{ borderColor: color, color }}>
-      <span className="sentiment-badge__dot" style={{ background: color }} />
+    <span className="sentiment-badge">
+      <span className="sentiment-badge__dot">{glyph}</span>
       {label} {value.toFixed(2)}
     </span>
   );
