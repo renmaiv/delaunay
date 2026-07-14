@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import type { AnalysisResult, DetectionCategory } from "./types";
 import { USER_CATEGORIES, MODEL_CATEGORIES } from "./types";
 import { analyzeFile } from "./api";
@@ -79,6 +80,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Analytics />
       <header className="app__header">
         <div className="app__title">
           <h1>Delaunay</h1>
