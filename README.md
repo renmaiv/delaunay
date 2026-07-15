@@ -9,7 +9,7 @@
 
 It's a simple mock tool:
 
-1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the pushyness and so on. Just poking the human-shaped tool to see something interesting.
+1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the pushyness and so on. Just poking to see something interesting.
 
 2. If you deal with a larger volume of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcam for vision and thought, what if you could "compress" sentiment issues into a tiny 100×100 px.
 
