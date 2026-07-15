@@ -107,8 +107,6 @@ behaviors always come from the judge.
 - **Plain text**: `User:` / `Assistant:` prefixed lines; `Thinking:` / `CoT:`
   attaches to the following assistant turn.
 
-Message roles are normalized (`human`→user, `model`/`ai`/`bot`→assistant). A
-detected model name renders in the UI as e.g. `Model: chatgpt 5.0`.
 
 ### Calibration note
 
@@ -119,9 +117,6 @@ as "strong signal", not "90% chance". Every detection carries
 
 ### Demo 
 
-The site opens with a **pre-evaluated example conversation** already rendered —
-spectre heatmap, detections, tabs, summary, and causal links — so a visitor sees
-the tool working with no upload and no backend call (the example is bundled into
-the build). 
+The site opens with a **pre-evaluated example conversation** already rendered.
 ```
 
