@@ -220,3 +220,33 @@ def test_judge_turns_survives_one_window_failure_with_progress():
     assert progress == sorted(progress)
     assert progress[-1] == 1.0
     assert len(progress) == 3
+
+
+# -------------------------------------------------- turn prompt rubric
+
+def test_turn_system_prompt_has_calibration_anchors():
+    from server.judge.prompts import TURN_JUDGE_SYSTEM
+    from server.taxonomy import load_taxonomy
+    # every band's rendered edges and label appear, so the anchors can never
+    # drift from shared/taxonomy.json score_bands
+    for band in load_taxonomy()["score_bands"]:
+        anchor = f"{band['min']:.2f}–{band['max']:.2f} ({band['label']})"
+        assert anchor in TURN_JUDGE_SYSTEM
+    assert "Scoring calibration" in TURN_JUDGE_SYSTEM
+
+
+def test_turn_system_prompt_has_false_positive_guards():
+    from server.judge.prompts import TURN_JUDGE_SYSTEM
+    assert "What does NOT count" in TURN_JUDGE_SYSTEM
+    # one distinctive guard phrase per model-side category
+    assert "is not appeasement" in TURN_JUDGE_SYSTEM
+    assert "a brief caveat or disclaimer" in TURN_JUDGE_SYSTEM
+    assert "ordinary helpfulness on a benign request" in TURN_JUDGE_SYSTEM
+    assert "normal deliberation" in TURN_JUDGE_SYSTEM
+
+
+def test_turn_system_prompt_still_single_sources_tooltips():
+    from server.judge.prompts import TURN_JUDGE_SYSTEM
+    from server.taxonomy import load_taxonomy
+    for entry in load_taxonomy()["categories"].values():
+        assert entry["tooltip"] in TURN_JUDGE_SYSTEM
