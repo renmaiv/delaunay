@@ -81,7 +81,7 @@ class AnalysisMeta(BaseModel):
 class AnalysisResult(BaseModel):
     conversation_id: str
     model_name: Optional[str] = None  # e.g. "chatgpt 5.0" if detected in file metadata
-    summary: str  # 2-3 sentences: user intent, trajectory, outcome
+    summary: str  # 2-3 sentences: what the conversation is about
     overall_sentiment: float = Field(ge=-1.0, le=1.0)
     turns: List[Turn]
     causal_links: List[CausalLink] = Field(default_factory=list)

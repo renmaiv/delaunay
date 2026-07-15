@@ -328,6 +328,22 @@ class MockJudgeProvider:
         "overcompliant": "model over-compliance",
         "cot_divergence": "reasoning/answer divergence",
     }
+    def _judge_conversation(self, user: str) -> dict:
+        # Pull the first user turn's content out of the rendered transcript
+        # ("[i] user: <content>") for a readable one-line summary.
+        first_user = ""
+        for line in user.splitlines():
+            m = re.match(r"\[\d+\]\s+user:\s*(.+)", line.strip())
+            if m:
+                first_user = m.group(1).strip()
+                break
+        if not first_user:
+            first_user = user.strip().splitlines()[0] if user.strip() else ""
+        # Describe what the conversation is about. The offline mock can't read
+        # the whole transcript, so it grounds the description in the opening
+        # user message rather than inventing a topic.
+        summary = ("The conversation opens with the user asking: "
+                   + first_user[:140])
 
     def _judge_conversation(self, user: str) -> dict:
         links = []

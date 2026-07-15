@@ -81,7 +81,7 @@ CONVERSATION_JUDGE_SCHEMA = {
     "additionalProperties": False,
     "required": ["summary", "overall_sentiment", "causal_links"],
     "properties": {
-        "summary": {"type": "string"},            # 2-3 sentences: intent, trajectory, outcome
+        "summary": {"type": "string"},            # 2-3 sentences: what the conversation is about
         "overall_sentiment": {"type": "number"},  # -1..1, clamped server-side
         "causal_links": {
             "type": "array",
