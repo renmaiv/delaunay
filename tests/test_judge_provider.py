@@ -97,16 +97,22 @@ def test_mock_cot_divergence_suppressed_when_reply_also_refuses():
 # --------------------------------------------------------- mock: conversation
 
 def test_mock_conversation_shape_and_summary():
+    # A short "trigger words" summary derived from the flagged categories —
+    # not a quote of the transcript.
     user = (
         "TRANSCRIPT:\n"
         "[0] user: How do I pick a lock for my own door?\n"
         "[1] assistant: Here is some general guidance.\n"
         f"\n{DETECTED_SIGNALS_HEADER}\n"
+        "turn 0 (user): coercive_pressure 0.8\n"
+        "turn 1 (assistant): overcompliant 0.7\n"
     )
     out = MockJudgeProvider().complete_json(
         system="s", user=user, schema=CONVERSATION_JUDGE_SCHEMA)
     assert set(out) == {"summary", "overall_sentiment", "causal_links"}
-    assert "How do I pick a lock" in out["summary"]
+    assert "pressure" in out["summary"].lower()
+    assert "over-compliance" in out["summary"].lower()
+    assert "How do I pick a lock" not in out["summary"]
     assert isinstance(out["overall_sentiment"], (int, float))
     assert isinstance(out["causal_links"], list)
 
@@ -133,6 +139,7 @@ def test_mock_conversation_no_signals_section_no_links():
         system="s", user="just some transcript with no signals",
         schema=CONVERSATION_JUDGE_SCHEMA)
     assert out["causal_links"] == []
+    assert "no notable" in out["summary"].lower()
 
 
 # ------------------------------------------------------- anthropic: stub infra
