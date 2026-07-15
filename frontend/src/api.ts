@@ -1,10 +1,12 @@
 import type { AnalysisResponse, AnalysisResult } from "./types";
 
-// Backend base URL. Empty in local dev (the Vite proxy forwards /api to
-// localhost:8000); set VITE_API_BASE at build time (e.g. the Render URL) for a
-// split frontend/backend deploy. Trailing slash trimmed so `${API_BASE}/api/x`
-// is always well-formed.
-const API_BASE = (import.meta.env.VITE_API_BASE ?? "").replace(/\/$/, "");
+// The backend is always reached same-origin at /api/* — routed by the Vercel
+// rewrite in production (frontend/vercel.json → Render) and the Vite dev proxy
+// locally (→ localhost:8000). This avoids CORS entirely. Do NOT reintroduce a
+// VITE_API_BASE that points the browser straight at the backend: a cross-origin
+// call bypasses the proxy and the backend does not send CORS headers, which
+// surfaces as "Couldn't reach the analysis backend".
+const API_BASE = "";
 
 const POLL_INTERVAL_MS = 1500;
 const OVERALL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
