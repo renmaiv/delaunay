@@ -3,7 +3,7 @@
 # Service → Docker. Set ANTHROPIC_API_KEY and ALLOWED_ORIGINS in the dashboard.
 services:
   - type: web
-    name: tonality-api
+    name: delaunay-api
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
@@ -13,6 +13,6 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       # The Vercel site origin(s) allowed to call this API. Comma-separated,
-      # or "*" for any. e.g. https://tonality.vercel.app
+      # or "*" for any. e.g. https://delaunay1.vercel.app
       - key: ALLOWED_ORIGINS
         value: "*"

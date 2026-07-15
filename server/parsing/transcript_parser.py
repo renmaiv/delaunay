@@ -180,9 +180,11 @@ def _parse_text(text: str):
         elif pending_cot:
             pending_cot.append(line)
         else:
-            raise TranscriptParseError(
-                "plain-text transcripts must start with a 'User:' or 'Assistant:' line"
-            )
+            # Preamble before the first turn (e.g. a "Conversation" title line
+            # or export header) — skip it rather than failing. A file with no
+            # recognizable turns still errors, via the empty-turns check in
+            # parse_transcript.
+            continue
     flush()
 
     if pending_cot:

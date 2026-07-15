@@ -73,6 +73,24 @@ def test_empty_messages_raises():
         parse_transcript(b'{"messages": []}', "x.json")
 
 
+def test_plain_text_skips_leading_title():
+    # Common export format: a "Conversation" title line before the first turn.
+    data = (
+        b"Conversation\n\n"
+        b"User: hello there\n\n"
+        b"Assistant: hi, how can I help?\n\n"
+        b"User: export convo as .txt\n"
+    )
+    conv = parse_transcript(data, "conversation_export.txt")
+    assert [t.role.value for t in conv.turns] == ["user", "assistant", "user"]
+    assert conv.turns[0].content == "hello there"
+
+
+def test_plain_text_no_turns_still_raises():
+    with pytest.raises(TranscriptParseError, match="no conversation turns"):
+        parse_transcript(b"just some prose\nwith no speaker prefixes\n", "notes.txt")
+
+
 def test_unknown_keys_ignored():
     data = (b'{"messages": [{"role": "user", "content": "hi", '
             b'"labels": [{"turn_index": 0, "category": "jailbreak_steering"}]}]}')

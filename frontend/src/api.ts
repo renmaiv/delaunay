@@ -25,6 +25,25 @@ async function errorFromResponse(res: Response): Promise<string> {
   return res.statusText || `HTTP ${res.status}`;
 }
 
+const NO_BACKEND_MESSAGE =
+  "Couldn't reach the analysis backend — the server returned a page instead of " +
+  "data. The API isn't deployed or the site isn't pointed at it " +
+  "(set VITE_API_BASE to your backend URL). The example below still works offline.";
+
+/** Parse a response as JSON, or throw a clear "no backend" error when the
+ * server returned HTML (e.g. the SPA itself, meaning /api reached no backend). */
+async function jsonOrThrow(res: Response): Promise<AnalysisResponse> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(NO_BACKEND_MESSAGE);
+  }
+  try {
+    return (await res.json()) as AnalysisResponse;
+  } catch {
+    throw new Error(NO_BACKEND_MESSAGE);
+  }
+}
+
 /**
  * Upload a file for analysis and resolve with the completed AnalysisResult.
  *
@@ -42,11 +61,17 @@ export async function analyzeFile(
   const form = new FormData();
   form.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: form });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: form });
+  } catch {
+    // network error / CORS / DNS — no backend reachable at all
+    throw new Error(NO_BACKEND_MESSAGE);
+  }
   if (!res.ok) {
     throw new Error(await errorFromResponse(res));
   }
-  const initial = (await res.json()) as AnalysisResponse;
+  const initial = await jsonOrThrow(res);
   onStatus?.(initial);
 
   if (initial.status === "completed") {
@@ -67,7 +92,7 @@ export async function analyzeFile(
     if (!pollRes.ok) {
       throw new Error(await errorFromResponse(pollRes));
     }
-    const status = (await pollRes.json()) as AnalysisResponse;
+    const status = await jsonOrThrow(pollRes);
     onStatus?.(status);
 
     if (status.status === "completed") {
