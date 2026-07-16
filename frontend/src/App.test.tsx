@@ -119,4 +119,16 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(screen.getByRole("button", { name: "Upload Chat" })).toBeTruthy();
   });
+
+  it("opens the selected pre-evaluated conversation from the grid", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /conversations/i }));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Open Taxes across two states" }),
+    );
+
+    expect(screen.getByTestId("transcript-slot")).toBeTruthy();
+    expect(screen.getByText(/worked remotely in two states/i)).toBeTruthy();
+  });
 });

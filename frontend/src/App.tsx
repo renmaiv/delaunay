@@ -140,7 +140,13 @@ export default function App() {
       )}
 
       {result && view === "conversations" && (
-        <ConversationsPage onBack={() => setView("analysis")} />
+        <ConversationsPage
+          onBack={() => setView("analysis")}
+          onSelect={(analysis) => {
+            setState({ phase: "done", result: analysis, isExample: true });
+            setView("analysis");
+          }}
+        />
       )}
 
       {result && view === "analysis" && (
