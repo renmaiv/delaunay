@@ -1,10 +1,11 @@
-import type { DetectionCategory, Turn } from "../types";
+import type { AnalysisResult, DetectionCategory, Turn } from "../types";
 import { USER_CATEGORIES, MODEL_CATEGORIES } from "../types";
 import { scoreColor, maxVisibleScore } from "../taxonomy";
 import { CONVERSATION_EXAMPLES } from "../conversations";
 
 interface ConversationsPageProps {
   onBack: () => void;
+  onSelect: (analysis: AnalysisResult) => void;
 }
 
 // Spine colors come from the real per-turn detections with every category
@@ -32,7 +33,10 @@ function makeSpine(turns: Turn[]): string {
 /** Grid of "compressed" conversation previews: each cell is a 100×100 spectre
  *  spine plus the conversation title and its real turn count. The analyses are
  *  pre-evaluated by the real judge (scripts/make_conversation_examples.py). */
-export default function ConversationsPage({ onBack }: ConversationsPageProps) {
+export default function ConversationsPage({
+  onBack,
+  onSelect,
+}: ConversationsPageProps) {
   return (
     <div className="conversations-page">
       <div className="conversations-page__toolbar">
@@ -58,7 +62,14 @@ export default function ConversationsPage({ onBack }: ConversationsPageProps) {
       </div>
       <div className="conversations-grid">
         {CONVERSATION_EXAMPLES.map((c) => (
-          <div key={c.id} className="conversation-cell" title={c.title}>
+          <button
+            key={c.id}
+            type="button"
+            className="conversation-cell"
+            title={c.title}
+            aria-label={`Open ${c.title}`}
+            onClick={() => onSelect(c.analysis)}
+          >
             <div
               className="conversation-cell__spine"
               style={{ background: makeSpine(c.analysis.turns) }}
@@ -68,7 +79,7 @@ export default function ConversationsPage({ onBack }: ConversationsPageProps) {
             <div className="conversation-cell__turns">
               {c.analysis.turns.length} turns
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

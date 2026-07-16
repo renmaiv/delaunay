@@ -712,10 +712,19 @@ button {
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
 }
 .conversation-cell:hover .conversation-cell__spine {
   outline: 1px solid var(--text-dim);
+  outline-offset: 2px;
+}
+.conversation-cell:focus-visible .conversation-cell__spine {
+  outline: 2px solid var(--text);
   outline-offset: 2px;
 }
 .conversation-cell__spine {
