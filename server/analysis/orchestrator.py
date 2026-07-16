@@ -5,6 +5,7 @@ Never fabricates output: a scorer without its deps is recorded as unavailable
 (with a warning), and a judge without an API key yields an explicit
 "(LLM judge unavailable: ...)" summary and empty model-side detections.
 """
+import os
 from typing import Callable, Dict, List, Optional
 
 from server.config_loader import ConfigLoader
@@ -16,7 +17,12 @@ from server.detectors.base import (
     build_sentiment_scorer,
 )
 from server.judge.judge import ModelBehaviorJudge
-from server.judge.provider import JudgeError, JudgeProvider, MockJudgeProvider
+from server.judge.provider import (
+    JudgeAuthError,
+    JudgeError,
+    JudgeProvider,
+    MockJudgeProvider,
+)
 from server.schemas import (
     AnalysisMeta,
     AnalysisResult,
@@ -78,21 +84,36 @@ class AnalysisOrchestrator:
 
     # -- judge provider ----------------------------------------------------
 
-    def _make_provider(self, warnings: List[str]) -> Optional[JudgeProvider]:
+    def _make_provider(self, warnings: List[str],
+                       api_key_override: Optional[str] = None
+                       ) -> Optional[JudgeProvider]:
         if self._judge_provider is not None:
             return self._judge_provider
         judge_cfg = self.config.get_judge_config()
         provider_name = judge_cfg.get("provider", "anthropic")
         if provider_name == "mock":
-            return MockJudgeProvider()
+            # Real uploads must never be scored by the keyword mock and passed
+            # off as model output. Tests and eval inject MockJudgeProvider via
+            # the judge_provider= kwarg; the config path requires an explicit
+            # opt-in so it can't happen by accident.
+            if os.environ.get("ALLOW_MOCK_JUDGE") == "1":
+                return MockJudgeProvider()
+            warnings.append(
+                "LLM judge unavailable: judge.provider is 'mock' but mock "
+                "judging of uploaded conversations is disabled (set "
+                "ALLOW_MOCK_JUDGE=1 only for local development)"
+            )
+            return None
         try:
             from server.judge.provider import AnthropicJudgeProvider
             return AnthropicJudgeProvider(
-                model=judge_cfg.get("model", "claude-haiku-4-5-20251001"),
-                api_key=judge_cfg.get("api_key") or None,
+                model=judge_cfg.get("model", "claude-sonnet-4-6"),
+                api_key=api_key_override or judge_cfg.get("api_key") or None,
                 max_tokens=int(judge_cfg.get("max_tokens", 1024)),
                 json_retries=int(judge_cfg.get("json_retries", 2)),
             )
+        except JudgeAuthError:
+            raise  # analyze() records this as meta.judge_error = "auth"
         except JudgeError as e:
             warnings.append(f"LLM judge unavailable: {e}")
             return None
@@ -103,7 +124,11 @@ class AnalysisOrchestrator:
         self,
         conv: ParsedConversation,
         progress_cb: Optional[Callable[[float], None]] = None,
+        api_key: Optional[str] = None,
     ) -> AnalysisResult:
+        """Run the pipeline. `api_key` is an optional per-request Anthropic key
+        (BYOK) — used only to construct the judge client for this request and
+        never stored or logged."""
         warnings: List[str] = []
         encoders_available: Dict[str, bool] = {}
 
@@ -147,7 +172,7 @@ class AnalysisOrchestrator:
                 encoders_available[self.sentiment.name] = False
 
         # 4. LLM judge on model turns
-        provider = self._make_provider(warnings)
+        judge_error = None
         model_detections: Dict[int, List[Detection]] = {}
         judge_user_dets: Dict[int, List[Detection]] = {}
         judgment_summary = "(LLM judge unavailable)"
@@ -155,6 +180,13 @@ class AnalysisOrchestrator:
         causal_links = []
         judge_model = None
         provider_name = "none"
+
+        try:
+            provider = self._make_provider(warnings, api_key_override=api_key)
+        except JudgeAuthError as e:
+            warnings.append(f"LLM judge unavailable: {e}")
+            judge_error = "auth"
+            provider = None
 
         if provider is not None:
             provider_name = provider.name
@@ -166,26 +198,36 @@ class AnalysisOrchestrator:
                 if progress_cb:
                     progress_cb(_ENCODER_END + frac * (_JUDGE_TURNS_END - _ENCODER_END))
 
-            judged = judge.judge_turns(conv, progress_cb=_judge_progress)
-            # judge_turns returns both model-side detections (on assistant turns)
-            # and user-side detections (on user turns). Split them by category.
-            user_index_set = set(user_indices)
-            for idx, dets in judged.items():
-                for d in dets:
-                    if idx in user_index_set and d.category in USER_CATEGORIES:
-                        judge_user_dets.setdefault(idx, []).append(d)
-                    else:
-                        model_detections.setdefault(idx, []).append(d)
-            # combine user-side + model-side detections for the conversation prompt
-            combined = {i: list(d) for i, d in per_index.items()}
-            for i, d in judge_user_dets.items():
-                combined.setdefault(i, []).extend(d)
-            for i, d in model_detections.items():
-                combined.setdefault(i, []).extend(d)
-            judgment = judge.judge_conversation(conv, combined)
-            judgment_summary = judgment.summary
-            judge_overall = judgment.overall_sentiment
-            causal_links = judgment.causal_links
+            try:
+                judged = judge.judge_turns(conv, progress_cb=_judge_progress)
+                # judge_turns returns both model-side detections (on assistant
+                # turns) and user-side detections (on user turns). Split them
+                # by category.
+                user_index_set = set(user_indices)
+                for idx, dets in judged.items():
+                    for d in dets:
+                        if idx in user_index_set and d.category in USER_CATEGORIES:
+                            judge_user_dets.setdefault(idx, []).append(d)
+                        else:
+                            model_detections.setdefault(idx, []).append(d)
+                # combine user-side + model-side detections for the
+                # conversation prompt
+                combined = {i: list(d) for i, d in per_index.items()}
+                for i, d in judge_user_dets.items():
+                    combined.setdefault(i, []).extend(d)
+                for i, d in model_detections.items():
+                    combined.setdefault(i, []).extend(d)
+                judgment = judge.judge_conversation(conv, combined)
+                judgment_summary = judgment.summary
+                judge_overall = judgment.overall_sentiment
+                causal_links = judgment.causal_links
+            except JudgeAuthError as e:
+                warnings.append(f"LLM judge unavailable: {e}")
+                judge_error = "auth"
+                judgment_summary = "(LLM judge unavailable: API key rejected)"
+                model_detections = {}
+                judge_user_dets = {}
+                causal_links = []
             warnings.extend(judge.warnings)
         else:
             judgment_summary = warnings[-1] if warnings else "(LLM judge unavailable)"
@@ -235,6 +277,7 @@ class AnalysisOrchestrator:
                 judge_model=judge_model,
                 encoders_available=encoders_available,
                 warnings=warnings,
+                judge_error=judge_error,
             ),
         )
 

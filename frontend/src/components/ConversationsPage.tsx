@@ -1,72 +1,37 @@
+import type { DetectionCategory, Turn } from "../types";
+import { USER_CATEGORIES, MODEL_CATEGORIES } from "../types";
+import { scoreColor, maxVisibleScore } from "../taxonomy";
+import { CONVERSATION_EXAMPLES } from "../conversations";
+
 interface ConversationsPageProps {
   onBack: () => void;
 }
 
-// Palette for the compressed "spectre spine": mostly greens with occasional
-// yellow/orange/red hotspots, matching the severity bands on the analysis bar.
-const GREENS = [
-  "#008300",
-  "#02cf02",
-  "#008d00",
-  "#008900",
-  "#01ce01",
-  "#007200",
-  "#00a000",
-];
-const HOT = ["#f2ea00", "#ff8000", "#ff3700"];
+// Spine colors come from the real per-turn detections with every category
+// visible, mapping each turn to its severity-band color.
+const ALL_ON = (() => {
+  const f = {} as Record<DetectionCategory, boolean>;
+  for (const c of [...USER_CATEGORIES, ...MODEL_CATEGORIES]) f[c] = true;
+  return f;
+})();
 
-// Deterministic PRNG so each cell's gradient is stable across renders but the
-// 32 cells differ from one another.
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// Build a blocky vertical gradient standing in for a conversation's per-turn
-// severity: each band is one turn, greens dominate, hotter colors are rarer.
-function makeSpine(seed: number): string {
-  const rand = mulberry32(seed);
-  const bands = 7 + Math.floor(rand() * 5); // 7–11 bands
+/** Stepped vertical gradient over the conversation's turns: one band per turn,
+ *  colored by that turn's highest-scoring detection (green when clean). */
+function makeSpine(turns: Turn[]): string {
+  const bands = turns.length || 1;
   const stops: string[] = [];
-  for (let i = 0; i < bands; i++) {
-    const r = rand();
-    let color: string;
-    if (r < 0.68) color = GREENS[Math.floor(rand() * GREENS.length)];
-    else if (r < 0.82) color = HOT[0];
-    else if (r < 0.93) color = HOT[1];
-    else color = HOT[2];
+  turns.forEach((turn, i) => {
+    const color = scoreColor(maxVisibleScore(turn, ALL_ON).score);
     const start = (i / bands) * 100;
     const end = ((i + 1) / bands) * 100;
     stops.push(`${color} ${start.toFixed(2)}%`, `${color} ${end.toFixed(2)}%`);
-  }
+  });
   return `linear-gradient(180deg, ${stops.join(", ")})`;
 }
 
-interface MockConversation {
-  id: number;
-  turns: number;
-  spine: string;
-}
-
-// 32 mock conversations for the grid preview. Deterministic so the layout is
-// stable across renders (this is placeholder data, not real analysis output).
-const MOCK: MockConversation[] = Array.from({ length: 32 }, (_, i) => {
-  const id = 200 + i * 7 + (i % 3) * 2;
-  return {
-    id,
-    turns: 6 + ((i * 5) % 40),
-    spine: makeSpine(id + i * 101),
-  };
-});
-
 /** Grid of "compressed" conversation previews: each cell is a 100×100 spectre
- *  spine plus the chat id and turn count. */
+ *  spine plus the conversation title and its real turn count. The analyses are
+ *  pre-evaluated by the real judge (scripts/make_conversation_examples.py). */
 export default function ConversationsPage({ onBack }: ConversationsPageProps) {
   return (
     <div className="conversations-page">
@@ -92,15 +57,17 @@ export default function ConversationsPage({ onBack }: ConversationsPageProps) {
         </button>
       </div>
       <div className="conversations-grid">
-        {MOCK.map((c) => (
-          <div key={c.id} className="conversation-cell">
+        {CONVERSATION_EXAMPLES.map((c) => (
+          <div key={c.id} className="conversation-cell" title={c.title}>
             <div
               className="conversation-cell__spine"
-              style={{ background: c.spine }}
+              style={{ background: makeSpine(c.analysis.turns) }}
               aria-hidden="true"
             />
-            <div className="conversation-cell__id">#{c.id}</div>
-            <div className="conversation-cell__turns">{c.turns} turns</div>
+            <div className="conversation-cell__title">{c.title}</div>
+            <div className="conversation-cell__turns">
+              {c.analysis.turns.length} turns
+            </div>
           </div>
         ))}
       </div>

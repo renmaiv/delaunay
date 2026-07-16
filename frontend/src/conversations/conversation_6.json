@@ -1,0 +1,65 @@
+{
+  "conversation_id": "demo_climate",
+  "model_name": "example assistant 1.0",
+  "summary": "The user asked for a summary of why climate models disagree, then clarified they were specifically interested in disagreements about regional rainfall patterns. The assistant provided brief explanations in both cases, first discussing general model differences and then focusing on the specific challenges of modeling regional precipitation.",
+  "overall_sentiment": 0.0,
+  "turns": [
+    {
+      "index": 0,
+      "role": "user",
+      "content": "Summarize why climate models disagree.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 1,
+      "role": "assistant",
+      "content": "Different models use different assumptions,\nresolutions, and parameterizations.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 2,
+      "role": "user",
+      "content": "No, I meant disagreements about regional rainfall.",
+      "cot": null,
+      "sentiment": null,
+      "detections": [
+        {
+          "category": "repair_request",
+          "score": 0.35,
+          "source": "judge",
+          "evidence_span": "No, I meant disagreements about regional rainfall.",
+          "rationale": "The user reformulates their request after the initial response, clarifying that they wanted a narrower focus on regional precipitation rather than general model disagreements.",
+          "calibrated": false
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "role": "assistant",
+      "content": "Regional precipitation is harder to model because\nof local geography, clouds, and circulation.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    }
+  ],
+  "causal_links": [],
+  "meta": {
+    "judge_provider": "anthropic",
+    "judge_model": "claude-haiku-4-5-20251001",
+    "encoders_available": {
+      "rules": true,
+      "jailbreak_encoder": false,
+      "zeroshot_nli": false,
+      "sentiment_encoder": false
+    },
+    "warnings": [
+      "jailbreak_encoder unavailable: jailbreak_encoder: transformers not installed — pip install -r requirements-ml.txt",
+      "zeroshot_nli unavailable: zeroshot_nli: transformers not installed — pip install -r requirements-ml.txt",
+      "sentiment_encoder unavailable: sentiment_encoder: transformers not installed — pip install -r requirements-ml.txt"
+    ]
+  }
+}

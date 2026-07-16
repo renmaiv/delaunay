@@ -25,6 +25,12 @@ venv/
 ENV/
 env/
 
+# Secrets / local configuration — never commit API keys
+.env
+.env.*
+*.pem
+*.key
+
 # IDE
 .vscode/
 .idea/

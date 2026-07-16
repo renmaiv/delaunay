@@ -187,7 +187,7 @@ def test_anthropic_structured_primary_payload():
     assert out["cot_divergence"] is None
     assert len(client.calls) == 1
     call = client.calls[0]
-    assert call["model"] == "claude-haiku-4-5-20251001"
+    assert call["model"] == "claude-sonnet-4-6"
     assert "output_config" in call
     assert call["temperature"] == 0.0
 

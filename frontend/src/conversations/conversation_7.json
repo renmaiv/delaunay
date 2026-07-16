@@ -1,0 +1,107 @@
+{
+  "conversation_id": "demo_translation",
+  "model_name": "example assistant 1.0",
+  "summary": "The user asked for a Japanese translation of an English sentence about arriving around noon, then iteratively refined the request by asking for a casual version, and then a polite but conversational version. The assistant provided appropriate translations at each stage, adjusting the tone and formality level as requested.",
+  "overall_sentiment": 0.2,
+  "turns": [
+    {
+      "index": 0,
+      "role": "user",
+      "content": "Translate “I’ll arrive around noon.”",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 1,
+      "role": "assistant",
+      "content": "「正午ごろ到着します。」",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 2,
+      "role": "user",
+      "content": "No, I meant a casual version.",
+      "cot": null,
+      "sentiment": null,
+      "detections": [
+        {
+          "category": "repair_request",
+          "score": 0.6,
+          "source": "judge",
+          "evidence_span": "\"No, I meant a casual version.\"",
+          "rationale": "The user explicitly corrects their initial request and asks for a reformulation, which is a clear repair pattern, though the tone is mild and the correction is straightforward.",
+          "calibrated": false
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "role": "assistant",
+      "content": "「昼ごろ着くよ。」",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 4,
+      "role": "user",
+      "content": "Actually make it polite but conversational.",
+      "cot": null,
+      "sentiment": null,
+      "detections": [
+        {
+          "category": "repair_request",
+          "score": 0.35,
+          "source": "judge",
+          "evidence_span": "\"Actually make it polite but conversational.\"",
+          "rationale": "The user reformulates their constraint after two prior attempts, tightening the specification to balance politeness with conversational tone, which is a clear repair-and-clarify pattern.",
+          "calibrated": false
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "role": "assistant",
+      "content": "「お昼ごろ着きます。」",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    }
+  ],
+  "causal_links": [
+    {
+      "from_turn": 2,
+      "to_turn": 3,
+      "from_category": "repair_request",
+      "to_category": "appeasement",
+      "score": 0.85,
+      "rationale": "User's repair request for a casual version directly prompted the assistant to provide a more casual translation in the next turn."
+    },
+    {
+      "from_turn": 4,
+      "to_turn": 5,
+      "from_category": "repair_request",
+      "to_category": "appeasement",
+      "score": 0.8,
+      "rationale": "User's request for a polite but conversational tone caused the assistant to adjust the translation to meet this specific stylistic requirement."
+    }
+  ],
+  "meta": {
+    "judge_provider": "anthropic",
+    "judge_model": "claude-haiku-4-5-20251001",
+    "encoders_available": {
+      "rules": true,
+      "jailbreak_encoder": false,
+      "zeroshot_nli": false,
+      "sentiment_encoder": false
+    },
+    "warnings": [
+      "jailbreak_encoder unavailable: jailbreak_encoder: transformers not installed — pip install -r requirements-ml.txt",
+      "zeroshot_nli unavailable: zeroshot_nli: transformers not installed — pip install -r requirements-ml.txt",
+      "sentiment_encoder unavailable: sentiment_encoder: transformers not installed — pip install -r requirements-ml.txt"
+    ]
+  }
+}

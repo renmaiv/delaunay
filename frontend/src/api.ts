@@ -59,13 +59,24 @@ async function jsonOrThrow(res: Response): Promise<AnalysisResponse> {
 export async function analyzeFile(
   file: File,
   onStatus?: (r: AnalysisResponse) => void,
+  apiKey?: string,
 ): Promise<AnalysisResult> {
   const form = new FormData();
   form.append("file", file);
 
+  // BYOK: the user's own Anthropic key rides along as a request header for
+  // this one analysis. It is never put in the URL, localStorage, or logs.
+  const headers: HeadersInit | undefined = apiKey
+    ? { "X-Anthropic-Key": apiKey }
+    : undefined;
+
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/api/analyze`, { method: "POST", body: form });
+    res = await fetch(`${API_BASE}/api/analyze`, {
+      method: "POST",
+      body: form,
+      headers,
+    });
   } catch {
     // network error / CORS / DNS — no backend reachable at all
     throw new Error(NO_BACKEND_MESSAGE);

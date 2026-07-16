@@ -21,6 +21,22 @@ class JudgeParseError(JudgeError):
     """Model output could not be parsed as schema-conforming JSON after retries."""
 
 
+class JudgeAuthError(JudgeError):
+    """The Anthropic API key is missing, invalid, or out of credit. Callers can
+    surface this distinctly (e.g. prompt the user to bring their own key)."""
+
+
+def _classify_api_error(e) -> JudgeError:
+    """Map an Anthropic SDK error to JudgeAuthError when it is a key/credit
+    problem the caller could fix by supplying a different API key."""
+    msg = str(e)
+    status = getattr(e, "status_code", None)
+    lowered = msg.lower()
+    if status in (401, 403) or "credit balance" in lowered or "billing" in lowered:
+        return JudgeAuthError(msg)
+    return JudgeError(msg)
+
+
 # ---- Protocol (verbatim from the contract) ----
 
 class JudgeProvider(Protocol):
@@ -95,7 +111,7 @@ class AnthropicJudgeProvider:
 
     name = "anthropic"
 
-    def __init__(self, model: str = "claude-haiku-4-5-20251001",
+    def __init__(self, model: str = "claude-sonnet-4-6",
                  api_key: Optional[str] = None, max_tokens: int = 1024,
                  json_retries: int = 2, client=None):
         self.model = model
@@ -120,7 +136,7 @@ class AnthropicJudgeProvider:
 
         key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not key:
-            raise JudgeError(
+            raise JudgeAuthError(
                 "no Anthropic API key: set ANTHROPIC_API_KEY or judge.api_key"
             )
         self._client = anthropic.Anthropic(api_key=key)
@@ -144,7 +160,12 @@ class AnthropicJudgeProvider:
                             output_config={"format": {"type": "json_schema",
                                                       "schema": schema}},
                         )
-                    except anthropic.BadRequestError:
+                    except anthropic.BadRequestError as e:
+                        # A 400 can also be a billing problem ("credit balance
+                        # is too low") — that is not a structured-output issue.
+                        classified = _classify_api_error(e)
+                        if isinstance(classified, JudgeAuthError):
+                            raise classified from e
                         # Permanent fallback: structured outputs unsupported.
                         self._structured_unsupported = True
                         use_structured = False
@@ -160,8 +181,9 @@ class AnthropicJudgeProvider:
                         temperature=0.0, system=system, messages=messages,
                     )
             except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
-                # SDK already retried 429/5xx; surface as an unrecoverable error.
-                raise JudgeError(str(e)) from e
+                # SDK already retried 429/5xx; surface as an unrecoverable error
+                # (auth/billing failures get their own class for BYOK handling).
+                raise _classify_api_error(e) from e
 
             raw_text = self._extract_text(response)
             try:

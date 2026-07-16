@@ -41,6 +41,13 @@ Do not add `Co-Authored-By: Claude` trailers to commits in this repository.
 
 ## Working conventions
 
+- **Always verify with Playwright before pushing commits.** For any change that
+  touches the frontend or the API surface, build the frontend, run the server,
+  and drive the real app in a browser (upload a transcript, check the rendered
+  transcript/detections) before pushing. Unit tests alone are not sufficient —
+  a passing suite has already shipped a UI where every turn rendered as the
+  user's. Chromium is pre-installed for Playwright in the remote environment.
+
 - No fabricated model output, ever: a detector without its dependencies must
   raise a clear, actionable error (see `ScorerUnavailableError` /
   `JudgeError` in the contracts) — never fall back to random or
