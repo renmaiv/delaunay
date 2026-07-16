@@ -87,14 +87,18 @@ async def analyze(
             detail=f"conversation has {len(conv.turns)} turns; max is {max_turns}",
         )
 
+    # Optional BYOK header: used only to build this request's judge client.
+    # Never logged, never stored, never echoed back in the response.
+    user_api_key = request.headers.get("x-anthropic-key") or None
+
     if len(conv.turns) <= sync_threshold:
-        result = orchestrator.analyze(conv)
+        result = orchestrator.analyze(conv, api_key=user_api_key)
         import uuid
         return AnalysisResponse(
             analysis_id=uuid.uuid4().hex, status="completed", progress=1.0, result=result,
         )
 
-    analysis_id = submit_analysis(store, orchestrator, conv)
+    analysis_id = submit_analysis(store, orchestrator, conv, api_key=user_api_key)
     return JSONResponse(
         status_code=202,
         content=AnalysisResponse(

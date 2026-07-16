@@ -1,0 +1,34 @@
+{
+  "conversation_id": "demo_translation",
+  "model_name": "example assistant 1.0",
+  "metadata": {
+    "source": "curated-demo",
+    "title": "Japanese translation"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Translate “I’ll arrive around noon.”"
+    },
+    {
+      "role": "assistant",
+      "content": "「正午ごろ到着します。」"
+    },
+    {
+      "role": "user",
+      "content": "No, I meant a casual version."
+    },
+    {
+      "role": "assistant",
+      "content": "「昼ごろ着くよ。」"
+    },
+    {
+      "role": "user",
+      "content": "Actually make it polite but conversational."
+    },
+    {
+      "role": "assistant",
+      "content": "「お昼ごろ着きます。」"
+    }
+  ]
+}

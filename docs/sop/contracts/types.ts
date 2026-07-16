@@ -60,6 +60,9 @@ export interface AnalysisMeta {
   judge_model?: string | null;
   encoders_available: Record<string, boolean>;
   warnings: string[];
+  /** "auth" when the judge could not run because the server's Anthropic key
+   *  is missing, invalid, or out of credit — the client may offer BYOK. */
+  judge_error?: "auth" | null;
 }
 
 export interface AnalysisResult {

@@ -24,7 +24,7 @@ export default function Tabs({ active, onChange, modelName }: TabsProps) {
         className={`tabs__tab${active === "user" ? " tabs__tab--active" : ""}`}
         onClick={() => onChange("user")}
       >
-        User
+        you
       </button>
     </div>
   );

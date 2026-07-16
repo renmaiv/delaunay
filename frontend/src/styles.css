@@ -276,10 +276,60 @@ button {
 }
 
 /* Analysis two-column region */
+.app__result {
+  position: relative;
+}
 .app__analysis {
   display: flex;
   gap: 1.25rem;
   align-items: flex-start;
+}
+
+/* BYOK overlay: blurs the analysis underneath when the server's Anthropic key
+   is unavailable and asks the user to bring their own. */
+.key-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  border-radius: var(--radius);
+}
+.key-overlay__panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.6rem;
+  max-width: 26rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+.key-overlay__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+.key-overlay__text {
+  margin: 0 0 0.9rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.key-overlay__form {
+  display: flex;
+  gap: 0.5rem;
+}
+.key-overlay__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
 }
 .app__filters {
   width: 260px;
@@ -676,6 +726,15 @@ button {
 .conversation-cell__id {
   font-size: 0.85rem;
   color: var(--text);
+}
+.conversation-cell__title {
+  max-width: 100px;
+  font-size: 12px;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .conversation-cell__turns {
   font-size: 12px;

@@ -80,14 +80,16 @@ class AnalysisStore:
 EXECUTOR = ThreadPoolExecutor(max_workers=2)
 
 
-def submit_analysis(store: AnalysisStore, orchestrator, conv) -> str:
+def submit_analysis(store: AnalysisStore, orchestrator, conv,
+                    api_key: str = None) -> str:
     analysis_id = store.create()
 
     def _run():
         store.set_running(analysis_id)
         try:
             result = orchestrator.analyze(
-                conv, progress_cb=lambda p: store.set_progress(analysis_id, p)
+                conv, progress_cb=lambda p: store.set_progress(analysis_id, p),
+                api_key=api_key,
             )
             store.complete(analysis_id, result)
         except Exception as e:  # pragma: no cover - defensive

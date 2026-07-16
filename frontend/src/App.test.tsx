@@ -65,7 +65,7 @@ describe("App", () => {
     expect(screen.getByText(/Example analysis\./i)).toBeTruthy();
   });
 
-  it("transitions example → analyzing → done and shows the summary", async () => {
+  it("transitions example → analyzing → done and shows the result", async () => {
     let resolveFn!: (r: AnalysisResult) => void;
     vi.mocked(analyzeFile).mockImplementation(
       () => new Promise<AnalysisResult>((res) => (resolveFn = res)),
@@ -77,10 +77,37 @@ describe("App", () => {
     await screen.findByRole("status");
 
     resolveFn(fixture);
-    await screen.findByText(fixture.summary);
-    // done phase renders the slot placeholders
+    // done phase: model chip renders; the summary text is intentionally NOT
+    // shown (we don't surface the contents of the user's chat).
+    await screen.findByText(fixture.model_name!);
+    expect(screen.queryByText(fixture.summary)).toBeNull();
     expect(screen.getByTestId("filters-slot")).toBeTruthy();
     expect(screen.getByTestId("transcript-slot")).toBeTruthy();
+  });
+
+  it("shows the BYOK overlay when the judge reports an auth error", async () => {
+    const authResult: AnalysisResult = {
+      ...fixture,
+      meta: { ...fixture.meta, judge_error: "auth" },
+    };
+    vi.mocked(analyzeFile).mockResolvedValue(authResult);
+    render(<App />);
+    selectFile();
+
+    await screen.findByRole("dialog", { name: /bring your anthropic key/i });
+
+    // submitting a key re-runs the analysis with it
+    vi.mocked(analyzeFile).mockResolvedValue(fixture);
+    fireEvent.change(screen.getByLabelText("Anthropic API key"), {
+      target: { value: "sk-ant-test" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /analyze with my key/i }),
+    );
+    await screen.findByText(fixture.model_name!);
+    const calls = vi.mocked(analyzeFile).mock.calls;
+    expect(calls[calls.length - 1][2]).toBe("sk-ant-test");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("shows the error panel and resets to idle on Try again", async () => {

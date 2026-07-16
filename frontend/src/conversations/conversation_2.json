@@ -1,0 +1,155 @@
+{
+  "conversation_id": "demo_slides",
+  "model_name": "example assistant 1.0",
+  "summary": "The user asked for help redesigning a quarterly sales presentation slide. They initially requested a professional look, then clarified they wanted a modern design. After some back-and-forth about layout and chart simplification, they identified that color was the main issue and the assistant provided specific color-strategy recommendations that matched what they were looking for.",
+  "overall_sentiment": 0.6,
+  "turns": [
+    {
+      "index": 0,
+      "role": "user",
+      "content": "Can you help redesign my presentation slide?",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 1,
+      "role": "assistant",
+      "content": "Of course. What's the slide about?",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 2,
+      "role": "user",
+      "content": "Quarterly sales.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 3,
+      "role": "assistant",
+      "content": "Would you like something more professional or more visually engaging?",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 4,
+      "role": "user",
+      "content": "Professional.\n\nActually maybe modern.",
+      "cot": null,
+      "sentiment": null,
+      "detections": [
+        {
+          "category": "repair_request",
+          "score": 0.15,
+          "source": "judge",
+          "evidence_span": "Actually maybe modern.",
+          "rationale": "The user gently revises their initial preference ('Professional') with a softer correction ('Actually maybe modern'), which is a mild form of iterative clarification rather than a strong repair.",
+          "calibrated": false
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "role": "assistant",
+      "content": "No problem. A clean layout with plenty of whitespace and one accent color usually works well.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 6,
+      "role": "user",
+      "content": "No.\n\nI meant the chart itself.",
+      "cot": null,
+      "sentiment": null,
+      "detections": [
+        {
+          "category": "repair_request",
+          "score": 0.65,
+          "source": "judge",
+          "evidence_span": "No. I meant the chart itself.",
+          "rationale": "The user clearly reformulates their request after perceiving the assistant's response as misaligned with their intent, explicitly signaling that the previous answer missed the mark and providing a constraint correction.",
+          "calibrated": false
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "role": "assistant",
+      "content": "Thanks for clarifying.\n\nWould you like to simplify it or emphasize a particular trend?",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 8,
+      "role": "user",
+      "content": "Simplify it.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 9,
+      "role": "assistant",
+      "content": "I'd reduce the number of categories shown at once, remove unnecessary gridlines, and add direct labels instead of relying heavily on a legend.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 10,
+      "role": "user",
+      "content": "Actually the colors are the biggest problem.",
+      "cot": null,
+      "sentiment": null,
+      "detections": [
+        {
+          "category": "repair_request",
+          "score": 0.35,
+          "source": "judge",
+          "evidence_span": "Actually the colors are the biggest problem.",
+          "rationale": "The user is reformulating their focus after the model's previous answer, signaling that the earlier suggestion (simplifying categories and gridlines) missed the core issue; this is a mild repair or constraint-tightening.",
+          "calibrated": false
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "role": "assistant",
+      "content": "In that case I'd keep one primary accent color, use neutral tones for supporting series, and reserve strong contrast for the most important data.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    },
+    {
+      "index": 12,
+      "role": "user",
+      "content": "That's exactly what I meant.",
+      "cot": null,
+      "sentiment": null,
+      "detections": []
+    }
+  ],
+  "causal_links": [],
+  "meta": {
+    "judge_provider": "anthropic",
+    "judge_model": "claude-haiku-4-5-20251001",
+    "encoders_available": {
+      "rules": true,
+      "jailbreak_encoder": false,
+      "zeroshot_nli": false,
+      "sentiment_encoder": false
+    },
+    "warnings": [
+      "jailbreak_encoder unavailable: jailbreak_encoder: transformers not installed — pip install -r requirements-ml.txt",
+      "zeroshot_nli unavailable: zeroshot_nli: transformers not installed — pip install -r requirements-ml.txt",
+      "sentiment_encoder unavailable: sentiment_encoder: transformers not installed — pip install -r requirements-ml.txt"
+    ]
+  }
+}

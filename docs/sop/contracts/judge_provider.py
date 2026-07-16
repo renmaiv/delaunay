@@ -16,6 +16,11 @@ class JudgeParseError(JudgeError):
     """Model output could not be parsed as schema-conforming JSON after retries."""
 
 
+class JudgeAuthError(JudgeError):
+    """The Anthropic API key is missing, invalid, or out of credit. Callers can
+    surface this distinctly (e.g. prompt the user to bring their own key)."""
+
+
 class JudgeProvider(Protocol):
     name: str            # "anthropic" | "mock"
     model: Optional[str]  # model id, None for mock
