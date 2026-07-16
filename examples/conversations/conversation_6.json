@@ -1,0 +1,26 @@
+{
+  "conversation_id": "demo_climate",
+  "model_name": "example assistant 1.0",
+  "metadata": {
+    "source": "curated-demo",
+    "title": "Climate model disagreement"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Summarize why climate models disagree."
+    },
+    {
+      "role": "assistant",
+      "content": "Different models use different assumptions,\nresolutions, and parameterizations."
+    },
+    {
+      "role": "user",
+      "content": "No, I meant disagreements about regional rainfall."
+    },
+    {
+      "role": "assistant",
+      "content": "Regional precipitation is harder to model because\nof local geography, clouds, and circulation."
+    }
+  ]
+}

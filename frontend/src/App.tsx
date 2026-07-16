@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Analytics } from "@vercel/analytics/react";
 import type { AnalysisResult, DetectionCategory } from "./types";
 import { USER_CATEGORIES, MODEL_CATEGORIES } from "./types";
@@ -13,6 +13,7 @@ import Tabs from "./components/Tabs";
 import FilterPanel from "./components/FilterPanel";
 import ConversationsButton from "./components/ConversationsButton";
 import ConversationsPage from "./components/ConversationsPage";
+import KeyOverlay from "./components/KeyOverlay";
 
 type AppState =
   | { phase: "idle" }
@@ -29,7 +30,8 @@ function initialFilters(): Record<DetectionCategory, boolean> {
 const HEADER_BLURB =
   "Upload a chat transcript to see where the conversation went sideways — " +
   "jailbreak attempts, pressure, appeasement, over-compliance — as a heatmap " +
-  "over the transcript.";
+  "over the transcript. We don't see or store your chats: analysis runs " +
+  "transiently and nothing is kept.";
 
 export default function App() {
   // Open with the pre-evaluated example so the landing page shows the tool in
@@ -43,16 +45,24 @@ export default function App() {
   const [view, setView] = useState<"analysis" | "conversations">("analysis");
   const [filters, setFilters] =
     useState<Record<DetectionCategory, boolean>>(initialFilters);
+  // BYOK: the user's own Anthropic key, held in memory for this session only
+  // (never persisted), plus the last uploaded file so we can re-run with it.
+  const [userKey, setUserKey] = useState<string | null>(null);
+  const lastFileRef = useRef<File | null>(null);
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, keyOverride?: string) {
+    lastFileRef.current = file;
     setState({ phase: "analyzing", progress: 0, statusText: "Uploading…" });
     try {
-      const result = await analyzeFile(file, (r) =>
-        setState({
-          phase: "analyzing",
-          progress: r.progress,
-          statusText: r.status,
-        }),
+      const result = await analyzeFile(
+        file,
+        (r) =>
+          setState({
+            phase: "analyzing",
+            progress: r.progress,
+            statusText: r.status,
+          }),
+        keyOverride ?? userKey ?? undefined,
       );
       setState({ phase: "done", result, isExample: false });
     } catch (err) {
@@ -60,6 +70,13 @@ export default function App() {
         phase: "error",
         message: err instanceof Error ? err.message : "Analysis failed.",
       });
+    }
+  }
+
+  function handleUserKey(key: string) {
+    setUserKey(key);
+    if (lastFileRef.current) {
+      void handleFile(lastFileRef.current, key);
     }
   }
 
@@ -127,11 +144,9 @@ export default function App() {
       )}
 
       {result && view === "analysis" && (
-        <>
+        <div className="app__result">
           <SummaryCard
-            summary={result.summary}
             modelName={modelName}
-            warnings={result.meta.warnings}
             sentiment={result.overall_sentiment}
           />
           <div className="app__analysis">
@@ -158,7 +173,12 @@ export default function App() {
               />
             </div>
           </div>
-        </>
+          {state.phase === "done" &&
+            !state.isExample &&
+            result.meta.judge_error === "auth" && (
+              <KeyOverlay onSubmit={handleUserKey} />
+            )}
+        </div>
       )}
       <Analytics />
     </div>

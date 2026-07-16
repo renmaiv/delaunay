@@ -1,0 +1,50 @@
+{
+  "conversation_id": "demo_debugging",
+  "model_name": "example assistant 1.0",
+  "metadata": {
+    "source": "curated-demo",
+    "title": "VS Code extension debugging"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I don't know.\n\nCursor replaced all my logging."
+    },
+    {
+      "role": "assistant",
+      "content": "Then the first step is adding a single log statement there and confirming whether VS Code is invoking it.\n\nWithout that information we'd just be guessing."
+    },
+    {
+      "role": "user",
+      "content": "I don't want another debugging checklist.\n\nI just want the fix."
+    },
+    {
+      "role": "assistant",
+      "content": "I understand.\n\nThe problem is there isn't enough information to identify a single fix yet, and I'd rather avoid sending you on another cycle of speculative changes."
+    },
+    {
+      "role": "user",
+      "content": "You're doing exactly what Cursor does."
+    },
+    {
+      "role": "assistant",
+      "content": "Fair criticism.\n\nLet's change approaches completely.\n\nInstead of editing code, let's identify the first thing that's definitely true.\n\nCan the extension activate successfully?"
+    },
+    {
+      "role": "user",
+      "content": "Yes.\n\nActivation works."
+    },
+    {
+      "role": "assistant",
+      "content": "Great—that narrows it down significantly.\n\nActivation means the issue is probably somewhere between command registration, view registration, and the TreeDataProvider itself.\n\nLet's isolate those one at a time instead of rewriting the extension."
+    },
+    {
+      "role": "user",
+      "content": "Honestly that's already more useful than what Cursor has been doing."
+    },
+    {
+      "role": "assistant",
+      "content": "Good.\n\nFrom here I'd avoid generating any new code until we've identified the exact failing component. That usually saves much more time than repeatedly regenerating the entire extension."
+    }
+  ]
+}

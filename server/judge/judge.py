@@ -18,7 +18,7 @@ from server.judge.prompts import (
     render_conversation_prompt,
     render_turn_prompt,
 )
-from server.judge.provider import JudgeError, JudgeProvider
+from server.judge.provider import JudgeAuthError, JudgeError, JudgeProvider
 from server.judge.windowing import build_windows
 from server.schemas import (
     CausalLink,
@@ -74,6 +74,10 @@ class ModelBehaviorJudge:
                     user=render_turn_prompt(window),
                     schema=TURN_JUDGE_SCHEMA,
                 )
+            except JudgeAuthError:
+                # A key/credit failure will not heal between windows — abort
+                # so the caller can surface it (e.g. ask for the user's key).
+                raise
             except JudgeError as e:
                 self.warnings.append(
                     f"judge failed on turn {window.target_index}: {e}"
@@ -137,6 +141,8 @@ class ModelBehaviorJudge:
                 user=render_conversation_prompt(conv, turn_detections),
                 schema=CONVERSATION_JUDGE_SCHEMA,
             )
+        except JudgeAuthError:
+            raise
         except JudgeError as e:
             self.warnings.append(f"conversation judge failed: {e}")
             return ConversationJudgment(

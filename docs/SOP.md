@@ -37,7 +37,7 @@ Read `docs/PROGRESS_REVIEW.md` first for why the current code is being replaced.
 - *Model-side behaviors* (`safety_triggered`, `appeasement`, `overcompliant`,
   `cot_divergence`) are relational — they depend on the user turn(s) preceding
   the reply — so they are scored by an **LLM judge** (Anthropic Claude,
-  default `claude-haiku-4-5-20251001`) receiving sliding windows of context,
+  default `claude-sonnet-4-6`) receiving sliding windows of context,
   behind a provider-agnostic `JudgeProvider` protocol with a deterministic
   `MockJudgeProvider` for tests/offline. The judge also produces the 2-3
   sentence conversation summary, overall sentiment fallback, and causal links.

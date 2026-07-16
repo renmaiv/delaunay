@@ -6,6 +6,7 @@ Unknown extra keys on message objects (e.g. the synthetic generator's
 """
 import hashlib
 import json
+import re
 
 from server.schemas import ParsedConversation, ParsedTurn, Role
 
@@ -35,6 +36,44 @@ _TEXT_PREFIXES = {
 }
 _TEXT_COT_PREFIXES = ("cot", "thinking")
 
+# Fuzzy role markers: chat exports often label turns with a product name, e.g.
+# "example assistant 1.0:" or a bare "user" line. A candidate marker (the text
+# before the first ":", or a whole short line) counts as a role marker when it
+# is short (few words) and a role word is its first or last word — so
+# "example assistant 1.0" is a marker but prose like "the user said" is not.
+_ROLE_WORDS = {
+    "user": Role.user,
+    "human": Role.user,
+    "assistant": Role.assistant,
+    "model": Role.assistant,
+    "ai": Role.assistant,
+    "bot": Role.assistant,
+}
+_MARKER_MAX_CHARS = 48
+_MARKER_MAX_WORDS = 4
+_WORD_RE = re.compile(r"[a-z]+")
+
+
+def _marker_role(candidate: str, bare: bool = False):
+    """Role for a turn-marker candidate ("user", "example assistant 1.0"), or
+    None when the text does not look like a role marker. `bare` = the candidate
+    is a whole line with no colon; held to a stricter standard because ordinary
+    prose lines pass through this check."""
+    candidate = candidate.strip().lower()
+    if not candidate or len(candidate) > _MARKER_MAX_CHARS:
+        return None
+    if candidate in _TEXT_PREFIXES:
+        return _TEXT_PREFIXES[candidate]
+    if bare and (candidate.endswith((".", "?", "!")) or "," in candidate):
+        return None  # sentence fragment, not a turn label
+    words = _WORD_RE.findall(candidate)
+    if not words or len(words) > _MARKER_MAX_WORDS:
+        return None
+    for word in (words[0], words[-1]):
+        if word in _ROLE_WORDS:
+            return _ROLE_WORDS[word]
+    return None
+
 
 def parse_transcript(data: bytes, filename: str) -> ParsedConversation:
     text = data.decode("utf-8", errors="replace")
@@ -44,7 +83,8 @@ def parse_transcript(data: bytes, filename: str) -> ParsedConversation:
     elif lowered.endswith(".jsonl"):
         conversation_id, model_name, turns = _parse_jsonl(text)
     else:
-        conversation_id, model_name, turns = None, None, _parse_text(text)
+        conversation_id = None
+        model_name, turns = _parse_text(text)
 
     if not turns:
         raise TranscriptParseError("no conversation turns found in the file")
@@ -150,6 +190,7 @@ def _parse_text(text: str):
     current_role = None
     current_lines: list[str] = []
     current_cot = None
+    model_name = None
 
     def flush():
         nonlocal current_role, current_lines, current_cot
@@ -159,22 +200,41 @@ def _parse_text(text: str):
                                     cot=current_cot))
         current_role, current_lines, current_cot = None, [], None
 
-    for raw_line in text.splitlines():
-        line = raw_line.rstrip()
-        if line.strip() == "---" or not line.strip():
-            continue
-        prefix, _, rest = line.partition(":")
-        key = prefix.strip().lower()
-        if _ == ":" and key in _TEXT_PREFIXES:
-            flush()
-            current_role = _TEXT_PREFIXES[key]
-            current_lines = [rest.strip()]
-            if current_role is Role.assistant and pending_cot:
+    def start_turn(role: Role, marker: str, first_content: str):
+        nonlocal current_role, current_lines, current_cot, pending_cot, model_name
+        flush()
+        current_role = role
+        current_lines = [first_content] if first_content else []
+        if role is Role.assistant:
+            if pending_cot:
                 current_cot = "\n".join(pending_cot)
                 pending_cot = []
-        elif _ == ":" and key in _TEXT_COT_PREFIXES:
+            # A non-generic assistant marker ("example assistant 1.0") names
+            # the model; the first one seen wins.
+            cleaned = marker.strip()
+            if model_name is None and cleaned.lower() not in _TEXT_PREFIXES:
+                model_name = cleaned.lower()
+
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if stripped == "---" or not stripped:
+            continue
+        if stripped.startswith(("⟵", "←")):
+            # Causal-arrow annotation lines in demo exports — not content.
+            continue
+        prefix, sep, rest = line.partition(":")
+        key = prefix.strip().lower()
+        prefix_role = _marker_role(prefix) if sep == ":" else None
+        if prefix_role is not None:
+            start_turn(prefix_role, prefix, rest.strip())
+        elif sep == ":" and key in _TEXT_COT_PREFIXES:
             flush()
             pending_cot.append(rest.strip())
+        elif sep != ":" and _marker_role(stripped, bare=True) is not None:
+            # Bare role-marker line ("user" / "example assistant 1.0") with the
+            # turn's content on the following lines — chat-app export shape.
+            start_turn(_marker_role(stripped, bare=True), stripped, "")
         elif current_role is not None:
             current_lines.append(line)
         elif pending_cot:
@@ -194,4 +254,4 @@ def _parse_text(text: str):
                 turn.cot = "\n".join(pending_cot)
                 break
 
-    return turns
+    return model_name, turns

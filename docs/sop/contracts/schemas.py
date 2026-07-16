@@ -77,6 +77,9 @@ class AnalysisMeta(BaseModel):
     judge_model: Optional[str] = None
     encoders_available: Dict[str, bool] = Field(default_factory=dict)  # scorer name -> loaded
     warnings: List[str] = Field(default_factory=list)
+    # "auth" when the judge could not run because the server's Anthropic key is
+    # missing, invalid, or out of credit — the client may offer BYOK and retry.
+    judge_error: Optional[Literal["auth"]] = None
 
 
 class AnalysisResult(BaseModel):

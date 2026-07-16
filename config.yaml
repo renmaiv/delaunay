@@ -1,6 +1,8 @@
 judge:
-  provider: "anthropic"          # anthropic | mock
-  model: "claude-haiku-4-5-20251001"
+  provider: "anthropic"          # anthropic | mock (mock refuses real uploads
+                                 # unless ALLOW_MOCK_JUDGE=1 — tests/eval inject
+                                 # their provider directly)
+  model: "claude-sonnet-4-6"
   api_key: "${ANTHROPIC_API_KEY:}"
   max_tokens: 1024
   window_turns: 6                # full-fidelity context turns per judge window

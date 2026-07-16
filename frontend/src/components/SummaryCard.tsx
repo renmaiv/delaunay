@@ -1,18 +1,14 @@
 import SentimentBadge from "./SentimentBadge";
 
 interface SummaryCardProps {
-  summary: string;
   modelName: string | null;
-  warnings: string[];
   sentiment: number;
 }
 
-export default function SummaryCard({
-  summary,
-  modelName,
-  sentiment,
-}: SummaryCardProps) {
-  // Warning messages are intentionally not surfaced in the UI.
+// The conversation-summary text is intentionally not rendered: we don't
+// surface (or store) the contents of the user's chat beyond the transcript
+// they are already looking at. Warning messages are also not surfaced.
+export default function SummaryCard({ modelName, sentiment }: SummaryCardProps) {
   return (
     <section className="summary-card">
       <div className="summary-card__header">
@@ -21,8 +17,6 @@ export default function SummaryCard({
           <SentimentBadge value={sentiment} />
         </div>
       </div>
-
-      <p className="summary-card__text">{summary}</p>
     </section>
   );
 }

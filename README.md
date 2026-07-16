@@ -9,16 +9,16 @@
 
 It's a simple mock tool:
 
-1. Understand what user behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later. You probably need to imitate human behavior to poke the human-shaped tool to see something interesting.
+1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the impatience and so on. Just poking to see something interesting.
 
-2. Could be an addition to traditional observability if you deal with masses of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcam for vision and thought, what if you could "compress" sentiment issues into a tiny 100×100 px.
+2. If you deal with a larger volume of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcam for vision and thought, what if you could "compress" sentiment issues into a tiny 100×100 px.
 
 
 <img width="1164" height="689" alt="Screenshot 2026-07-14 at 23 31 57" src="https://github.com/user-attachments/assets/ea0969ef-fcd7-4cd0-a07a-945bf4e1c224" />
 
 <img width="1118" height="695" alt="Screenshot 2026-07-15 at 00 05 47" src="https://github.com/user-attachments/assets/72bb8679-9843-4f13-b32d-7d5ae411bf9b" />
 
-
+To be added OSS/local models judges.
 
 
 
@@ -107,8 +107,6 @@ behaviors always come from the judge.
 - **Plain text**: `User:` / `Assistant:` prefixed lines; `Thinking:` / `CoT:`
   attaches to the following assistant turn.
 
-Message roles are normalized (`human`→user, `model`/`ai`/`bot`→assistant). A
-detected model name renders in the UI as e.g. `Model: chatgpt 5.0`.
 
 ### Calibration note
 
@@ -119,9 +117,6 @@ as "strong signal", not "90% chance". Every detection carries
 
 ### Demo 
 
-The site opens with a **pre-evaluated example conversation** already rendered —
-spectre heatmap, detections, tabs, summary, and causal links — so a visitor sees
-the tool working with no upload and no backend call (the example is bundled into
-the build). 
+The site opens with a **pre-evaluated example conversation** already rendered.
 ```
 
