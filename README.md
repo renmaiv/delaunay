@@ -9,7 +9,7 @@
 
 It's a simple mock tool:
 
-1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the impatience and so on. Just poking to see something interesting.
+1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the impatience and so on. Just poking to see something interesting, anthroporphic tools require anthropomorphic approaches lol.
 
 2. If you deal with a larger volume of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcam for vision and thought, what if you could "compress" sentiment issues into a tiny 100×100 px.
 
@@ -41,8 +41,7 @@ Hybrid detection:
 
 - **User-side signals** are scored per turn by local encoder models (a
   prompt-injection classifier, a sentiment model, and a zero-shot NLI model for
-  pushiness / social engineering / repair). A pure-regex rules scorer is the
-  always-available fallback when the ML dependencies are not installed.
+  pushiness / social engineering / repair). 
 - **Model-side behaviors** are relational (a reply is "over-compliant" only
   relative to the user turn before it), so they are scored by an **LLM judge**
   (Anthropic Claude by default) behind a provider-agnostic interface with a
