@@ -9,9 +9,9 @@
 
 It's a simple mock tool:
 
-1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the impatience and so on. Just poking to see something interesting, anthroporphic tools require anthropomorphic approaches lol.
+1. Understand what user/agent behavior produced what model behavior down the line. For example, it was interesting for me to see how pushy requests increase the number of hallucinations later, and compaction increases the impatience, user overconfident tone forces to diverge from original CoTs, and so on. Just poking to see something interesting, anthroporphic tools require anthropomorphic approaches lol.
 
-2. If you deal with a larger volume of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcam for vision and thought, what if you could "compress" sentiment issues into a tiny 100×100 px.
+2. If you deal with a larger volume of customer conversations but don't have time to read every one of them in detail. I got inspired by gradcam for vision and thought (it's not technically a gradcam but a visual representation), what if you could "compress" sentiment issues into a tiny 100×100 px.
 
 
 <img width="1164" height="689" alt="Screenshot 2026-07-14 at 23 31 57" src="https://github.com/user-attachments/assets/ea0969ef-fcd7-4cd0-a07a-945bf4e1c224" />
